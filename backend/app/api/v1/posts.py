@@ -1,8 +1,9 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.dependencies import get_db, get_current_user_id
 from app.schemas.post import PostCreate, PostOut, CommentCreate, CommentOut
+from app.services.feed_service import FeedService
 
 router = APIRouter()
 
@@ -14,16 +15,15 @@ async def create_post(
     db: AsyncSession = Depends(get_db),
 ):
     """Create a new post (human or clone)"""
-    return {
-        "id": "00000000-0000-0000-0000-000000000000",
-        "author_id": user_id,
-        "author_type": "human",
-        "content": data.content,
-        "likes_count": 0,
-        "comments_count": 0,
-        "is_ai_generated": False,
-        "created_at": "2024-01-01T00:00:00Z",
-    }
+    service = FeedService(db)
+    post = await service.create_post(
+        author_id=user_id,
+        author_type="human",
+        content=data.content,
+        media_urls=data.media_urls,
+        tags=data.tags,
+    )
+    return post
 
 
 @router.get("/{post_id}/comments")
@@ -33,7 +33,9 @@ async def get_comments(
     db: AsyncSession = Depends(get_db),
 ):
     """Get comments for a post"""
-    return {"items": []}
+    service = FeedService(db)
+    comments = await service.get_comments(post_id)
+    return {"items": comments}
 
 
 @router.post("/{post_id}/comments")
@@ -44,4 +46,12 @@ async def create_comment(
     db: AsyncSession = Depends(get_db),
 ):
     """Add a comment"""
-    return {"status": "created"}
+    service = FeedService(db)
+    comment = await service.create_comment(
+        post_id=post_id,
+        author_id=user_id,
+        author_type="human",
+        content=data.content,
+        parent_id=data.parent_id,
+    )
+    return comment
