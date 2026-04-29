@@ -105,7 +105,7 @@ class ResponseGenerator:
 
 你当前的心情: {mood_name}
 心情描述: {mood_hint}
-你最近的活动: {', '.join(recent_activities) if recentactivities else '日常'}
+你最近的活动: {', '.join(recent_activities) if recent_activities else '日常'}
 
 要求:
 - 严格用你平时的说话风格（包括标点、emoji、语气词习惯）

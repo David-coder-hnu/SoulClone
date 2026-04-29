@@ -1,5 +1,4 @@
 import random
-from uuid import UUID
 
 from sqlalchemy import select, or_
 from sqlalchemy.ext.asyncio import AsyncSession

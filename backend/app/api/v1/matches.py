@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.dependencies import get_db, get_current_user_id
-from app.schemas.match import MatchOut, MatchAction
+from app.schemas.match import MatchAction
 from app.services.match_service import MatchService
 
 router = APIRouter()

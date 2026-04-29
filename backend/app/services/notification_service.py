@@ -1,5 +1,3 @@
-from datetime import datetime, timezone
-from uuid import UUID
 
 from sqlalchemy import select, desc
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -34,7 +32,7 @@ class NotificationService:
     async def list_for_user(self, user_id: str, unread_only: bool = False):
         query = select(Notification).where(Notification.user_id == user_id)
         if unread_only:
-            query = query.where(Notification.is_read == False)
+            query = query.where(Notification.is_read is False)
         query = query.order_by(desc(Notification.created_at))
         result = await self.db.execute(query)
         return result.scalars().all()

@@ -1,8 +1,6 @@
 import asyncio
 from typing import Dict, AsyncGenerator
 
-from app.config import settings
-import redis.asyncio as redis
 
 
 class SSENotifier:

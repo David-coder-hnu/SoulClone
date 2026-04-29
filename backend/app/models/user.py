@@ -1,11 +1,15 @@
-import uuid
-from datetime import datetime, timezone
+from __future__ import annotations
+from datetime import datetime
+from typing import TYPE_CHECKING
 
 from sqlalchemy import String, Boolean, DateTime, Text, DECIMAL, Enum
-from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base, TimestampMixin
+
+if TYPE_CHECKING:
+    from app.models.clone_profile import CloneProfile
+    from app.models.clone import Clone
 
 
 class User(Base, TimestampMixin):

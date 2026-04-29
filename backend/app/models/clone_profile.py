@@ -1,11 +1,17 @@
+from __future__ import annotations
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime
+from typing import TYPE_CHECKING
 
 from sqlalchemy import String, Text, Integer, DECIMAL, Boolean, DateTime, JSON, ForeignKey, ARRAY
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base, TimestampMixin
+
+if TYPE_CHECKING:
+    from app.models.user import User
+    from app.models.clone import Clone
 
 
 class CloneProfile(Base, TimestampMixin):

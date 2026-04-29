@@ -1,9 +1,8 @@
 import uuid
-from datetime import datetime, timezone
 
-from sqlalchemy import String, Text, Integer, Boolean, DateTime, JSON, ForeignKey, Enum, DECIMAL
+from sqlalchemy import Text, Integer, Boolean, JSON, ForeignKey, Enum, DECIMAL
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.orm import Mapped, mapped_column
 
 from app.models.base import Base, TimestampMixin
 

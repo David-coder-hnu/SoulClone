@@ -16,7 +16,6 @@ from app.ai.clone_engine.emotion_simulator import EmotionSimulator
 from app.ai.clone_engine.memory_manager import MemoryManager
 from app.models.clone_profile import CloneProfile
 from app.models.clone import Clone
-from app.models.conversation import Conversation
 
 
 class CloneBridge:
@@ -114,7 +113,7 @@ class CloneBridge:
         memory_context = self.memory.get_memory_context(clone_id, conversation_id, other_user_id)
 
         # 6. Build relationship context
-        conv = await self.chat_service.get_conversation(conversation_id)
+        _conv = await self.chat_service.get_conversation(conversation_id)
         relationship_context = {
             "intimacy_level": 50,  # TODO: calculate from interaction history
             "is_mutual_like": False,

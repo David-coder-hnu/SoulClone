@@ -1,10 +1,8 @@
-from uuid import UUID
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.clone import Clone
-from app.models.clone_profile import CloneProfile
 
 
 class CloneService:

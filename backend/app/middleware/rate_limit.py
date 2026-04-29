@@ -1,5 +1,5 @@
 import time
-from typing import Dict, Tuple
+from typing import Dict
 
 from fastapi import Request, HTTPException
 from starlette.middleware.base import BaseHTTPMiddleware

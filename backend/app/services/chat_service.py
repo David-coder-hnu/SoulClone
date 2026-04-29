@@ -1,7 +1,6 @@
 from datetime import datetime, timezone
-from uuid import UUID
 
-from sqlalchemy import select, and_, or_
+from sqlalchemy import select, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.conversation import Conversation

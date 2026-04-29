@@ -1,8 +1,6 @@
-import os
 from typing import AsyncGenerator
 
 import openai
-import httpx
 from anthropic import AsyncAnthropic
 
 from app.config import settings

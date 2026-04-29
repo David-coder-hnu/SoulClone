@@ -6,7 +6,6 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.dependencies import get_db, get_current_user_id
-from app.schemas.notification import NotificationOut
 
 router = APIRouter()
 

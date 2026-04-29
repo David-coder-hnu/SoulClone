@@ -9,7 +9,6 @@ from sqlalchemy import select
 from app.websocket.manager import manager
 from app.websocket.clone_bridge import CloneBridge
 from app.services.chat_service import ChatService
-from app.models.conversation import Conversation
 from app.models.clone import Clone
 
 

@@ -3,7 +3,6 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.dependencies import get_db, get_current_user_id
-from app.schemas.date_invite import DateInviteCreate, DateInviteOut
 from app.models.date_invite import DateInvite
 
 router = APIRouter()

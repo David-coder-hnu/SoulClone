@@ -5,7 +5,7 @@ MemoryManager — 智能记忆管理系统
 不是简单的消息存储，而是基于蒸馏人格进行智能摘要和检索。
 """
 
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone
 from collections import defaultdict
 
 

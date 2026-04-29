@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.dependencies import get_db, get_current_user_id
-from app.schemas.chat import MessageCreate, MessageOut
+from app.schemas.chat import MessageCreate
 from app.services.chat_service import ChatService
 
 router = APIRouter()

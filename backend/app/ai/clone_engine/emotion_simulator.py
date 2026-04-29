@@ -135,7 +135,7 @@ class EmotionSimulator:
         """Analyze sentiment score (-1 to 1) with persona-aware weighting"""
         # User's specific vocabulary
         vocab = profile.get("vocabulary_profile", {})
-        signature_words = vocab.get("signature_words", [])
+        _signature_words = vocab.get("signature_words", [])
         
         positive_words = ["好", "棒", "喜欢", "开心", "爱", "想", "见", "约", "可爱", "有趣", "赞", "✨", "😊", "😂", "❤️"]
         negative_words = ["不", "讨厌", "忙", "累", "烦", "算了", "别", "差", "糟", "😒", "🙄", "😤"]

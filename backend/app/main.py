@@ -58,7 +58,6 @@ async def health():
 
 @app.websocket("/ws/chat")
 async def websocket_chat(websocket: WebSocket, token: str = Query(...)):
-    from app.dependencies import get_current_user_id
     
     try:
         from app.core.security import decode_token
