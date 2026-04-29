@@ -5,10 +5,10 @@ from sqlalchemy import Text, Boolean, DateTime, ForeignKey, Enum, String
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.models.base import Base, TimestampMixin
+from app.models.base import Base, UUIDMixin, TimestampMixin
 
 
-class Message(Base, TimestampMixin):
+class Message(Base, UUIDMixin, TimestampMixin):
     __tablename__ = "messages"
 
     conversation_id: Mapped[uuid.UUID] = mapped_column(

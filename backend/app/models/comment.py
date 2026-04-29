@@ -4,10 +4,10 @@ from sqlalchemy import Text, Integer, Boolean, ForeignKey, Enum
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.models.base import Base, TimestampMixin
+from app.models.base import Base, UUIDMixin, TimestampMixin
 
 
-class Comment(Base, TimestampMixin):
+class Comment(Base, UUIDMixin, TimestampMixin):
     __tablename__ = "comments"
 
     post_id: Mapped[uuid.UUID] = mapped_column(

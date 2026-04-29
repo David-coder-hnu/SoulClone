@@ -4,10 +4,10 @@ from sqlalchemy import String, Text, Boolean, ForeignKey, Enum, JSON
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.models.base import Base, TimestampMixin
+from app.models.base import Base, UUIDMixin, TimestampMixin
 
 
-class Notification(Base, TimestampMixin):
+class Notification(Base, UUIDMixin, TimestampMixin):
     __tablename__ = "notifications"
 
     user_id: Mapped[uuid.UUID] = mapped_column(

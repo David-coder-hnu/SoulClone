@@ -7,14 +7,14 @@ from sqlalchemy import String, Text, Integer, DECIMAL, Boolean, DateTime, JSON, 
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.models.base import Base, TimestampMixin
+from app.models.base import Base, UUIDMixin, TimestampMixin
 
 if TYPE_CHECKING:
     from app.models.user import User
     from app.models.clone import Clone
 
 
-class CloneProfile(Base, TimestampMixin):
+class CloneProfile(Base, UUIDMixin, TimestampMixin):
     __tablename__ = "clone_profiles"
 
     user_id: Mapped[uuid.UUID] = mapped_column(

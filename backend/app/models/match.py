@@ -5,10 +5,10 @@ from sqlalchemy import DECIMAL, Text, DateTime, ForeignKey, Enum
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.models.base import Base, TimestampMixin
+from app.models.base import Base, UUIDMixin, TimestampMixin
 
 
-class Match(Base, TimestampMixin):
+class Match(Base, UUIDMixin, TimestampMixin):
     __tablename__ = "matches"
 
     user_a_id: Mapped[uuid.UUID] = mapped_column(

@@ -5,14 +5,14 @@ from typing import TYPE_CHECKING
 from sqlalchemy import String, Boolean, DateTime, Text, DECIMAL, Enum
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.models.base import Base, TimestampMixin
+from app.models.base import Base, UUIDMixin, TimestampMixin
 
 if TYPE_CHECKING:
     from app.models.clone_profile import CloneProfile
     from app.models.clone import Clone
 
 
-class User(Base, TimestampMixin):
+class User(Base, UUIDMixin, TimestampMixin):
     __tablename__ = "users"
 
     phone: Mapped[str] = mapped_column(String(20), unique=True, nullable=False)
