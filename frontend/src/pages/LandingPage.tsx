@@ -1,9 +1,12 @@
 import { Link } from 'react-router-dom'
-import { motion } from 'framer-motion'
-import { Sparkles, ArrowRight, Zap, Shield, Heart, ChevronDown } from 'lucide-react'
+import { motion, useScroll, useTransform } from 'framer-motion'
+import { useRef } from 'react'
+import { Sparkles, ArrowRight, Zap, Shield, Heart, ChevronDown, Orbit, Fingerprint, MessageSquarePlus } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import AnimatedBackground from '@/components/shared/AnimatedBackground'
 import CursorTrail from '@/components/shared/CursorTrail'
+import NeuralCard from '@/components/shared/NeuralCard'
+import ScanLight from '@/components/shared/ScanLight'
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -20,35 +23,54 @@ const itemVariants = {
 
 const features = [
   {
-    icon: Zap,
+    icon: <Zap size={24} />,
     title: '深度个性延续',
-    desc: '通过深度问卷和聊天样本，平台精确理解你的 personality、聊天风格和情感模式。',
-    color: 'text-accent-cyan',
-    glow: 'shadow-accent-cyan/20',
-    gradient: 'from-accent-cyan/20 to-transparent',
+    desc: '通过深度问卷和聊天样本，平台精确理解你的 personality、聊天风格和情感模式，让 AI 的你无缝延续真实的你。',
     accent: '#00f0ff',
   },
   {
-    icon: Heart,
+    icon: <Heart size={24} />,
     title: '替你培养感情',
-    desc: '你的在线状态会在你离线时继续聊天、匹配、培养关系，时机成熟时邀请你批准约会。',
-    color: 'text-accent-magenta',
-    glow: 'shadow-accent-magenta/20',
-    gradient: 'from-accent-magenta/20 to-transparent',
+    desc: '你的在线状态会在你离线时继续聊天、匹配、培养关系。时机成熟时，它会邀请你批准下一步行动。',
     accent: '#ff006e',
   },
   {
-    icon: Shield,
+    icon: <Shield size={24} />,
     title: '悬疑社交体验',
     desc: '对方永远不知道屏幕那头是真人还是在线状态。只有双方都同意时，真实身份才会揭晓。',
-    color: 'text-accent-gold',
-    glow: 'shadow-accent-gold/20',
-    gradient: 'from-accent-gold/20 to-transparent',
+    accent: '#ffbe0b',
+  },
+]
+
+const protocols = [
+  {
+    icon: <Fingerprint size={22} />,
+    title: '人格探测',
+    desc: '12道深度心理学问题，结合MBTI和大五人格模型，构建精准人格画像。',
+    accent: '#00f0ff',
+  },
+  {
+    icon: <MessageSquarePlus size={22} />,
+    title: '风格学习',
+    desc: '上传聊天记录，AI 分析你的语气词、表情包习惯、回复节奏和幽默感。',
+    accent: '#ff006e',
+  },
+  {
+    icon: <Orbit size={22} />,
+    title: '自动运行',
+    desc: '激活自动模式后，AI 克隆体在平台上独立社交、匹配、维系关系。',
     accent: '#ffbe0b',
   },
 ]
 
 export default function LandingPage() {
+  const stepsRef = useRef<HTMLDivElement>(null)
+  const { scrollYProgress } = useScroll({
+    target: stepsRef,
+    offset: ['start end', 'end start'],
+  })
+  const lineScale = useTransform(scrollYProgress, [0, 0.6], [0, 1])
+
   return (
     <div className="relative min-h-screen overflow-hidden bg-background">
       <CursorTrail />
@@ -101,7 +123,7 @@ export default function LandingPage() {
             </motion.div>
 
             <motion.h1 variants={itemVariants} className="font-display text-5xl md:text-7xl font-bold mb-6 leading-tight tracking-tight">
-              你的灵魂
+              <ScanLight>你的灵魂</ScanLight>
               <br />
               <span className="text-gradient">不止一个容器</span>
             </motion.h1>
@@ -147,7 +169,7 @@ export default function LandingPage() {
           </motion.div>
         </section>
 
-        {/* Features */}
+        {/* Features — NeuralCard 3D tilt */}
         <section className="py-24 px-4 relative">
           <div className="max-w-5xl mx-auto">
             <motion.div
@@ -175,43 +197,21 @@ export default function LandingPage() {
 
             <div className="grid md:grid-cols-3 gap-8">
               {features.map((feature, i) => (
-                <motion.div
+                <NeuralCard
                   key={i}
-                  initial={{ opacity: 0, y: 40 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true, margin: '-50px' }}
-                  transition={{ delay: i * 0.15, duration: 0.6 }}
-                  whileHover={{ y: -8, transition: { duration: 0.3 } }}
-                  className={cn(
-                    'glass-elevated rounded-3xl p-8 h-full relative overflow-hidden group cursor-default',
-                    'hover:border-white/10 transition-all duration-300',
-                    `hover:shadow-xl ${feature.glow}`
-                  )}
-                >
-                  <div className={cn('absolute top-0 right-0 w-40 h-40 bg-gradient-to-bl opacity-20 rounded-bl-full transition-opacity group-hover:opacity-40', feature.gradient)} />
-                  <div className={cn('absolute -bottom-4 -left-4 w-24 h-24 rounded-full blur-[60px] opacity-0 group-hover:opacity-100 transition-opacity', feature.gradient)} />
-
-                  <motion.div
-                    whileHover={{ rotate: [0, -5, 5, 0], scale: 1.1 }}
-                    transition={{ duration: 0.5 }}
-                    className={cn('w-14 h-14 rounded-2xl flex items-center justify-center mb-6 relative z-10 border border-white/5', feature.glow.replace('shadow-', 'bg-').replace('/20', '/10'))}
-                    style={{ boxShadow: `0 0 20px ${feature.accent}20` }}
-                  >
-                    <feature.icon size={26} className={feature.color} />
-                  </motion.div>
-
-                  <h3 className="font-display text-xl font-bold mb-3 relative z-10">{feature.title}</h3>
-                  <p className="text-text-secondary leading-relaxed relative z-10">{feature.desc}</p>
-
-                  <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
-                </motion.div>
+                  icon={feature.icon}
+                  title={feature.title}
+                  desc={feature.desc}
+                  accent={feature.accent}
+                  index={i}
+                />
               ))}
             </div>
           </div>
         </section>
 
-        {/* How it works */}
-        <section className="py-24 px-4 relative">
+        {/* How it works — with scroll-driven timeline */}
+        <section ref={stepsRef} className="py-24 px-4 relative">
           <div className="max-w-4xl mx-auto">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -224,37 +224,117 @@ export default function LandingPage() {
               </h2>
             </motion.div>
 
-            <div className="space-y-12">
-              {[
-                { step: '01', title: '人格探测', desc: '回答12道深度问题，描绘你的人格画像' },
-                { step: '02', title: '风格学习', desc: '提供聊天样本，让系统学习你的表达习惯' },
-                { step: '03', title: '自动运行', desc: '激活自动模式，另一个你开始替你社交' },
-              ].map((item, i) => (
+            <div className="relative">
+              {/* Animated vertical timeline line */}
+              <div className="absolute left-10 md:left-1/2 md:-translate-x-px top-0 bottom-0 w-px bg-white/5 overflow-hidden">
                 <motion.div
+                  className="w-full bg-gradient-to-b from-accent-cyan via-accent-magenta to-accent-gold origin-top"
+                  style={{ height: '100%', scaleY: lineScale }}
+                />
+              </div>
+
+              <div className="space-y-16">
+                {[
+                  { step: '01', title: '人格探测', desc: '回答12道深度问题，描绘你的人格画像', accent: '#00f0ff', icon: Fingerprint },
+                  { step: '02', title: '风格学习', desc: '提供聊天样本，让系统学习你的表达习惯', accent: '#ff006e', icon: MessageSquarePlus },
+                  { step: '03', title: '自动运行', desc: '激活自动模式，另一个你开始替你社交', accent: '#ffbe0b', icon: Orbit },
+                ].map((item, i) => (
+                  <motion.div
+                    key={i}
+                    initial={{ opacity: 0, y: 40 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true, margin: '-60px' }}
+                    transition={{ duration: 0.6, delay: 0.1 }}
+                    className={cn(
+                      'flex items-center gap-6 md:gap-10',
+                      i % 2 === 0 ? 'md:flex-row' : 'md:flex-row-reverse'
+                    )}
+                  >
+                    <div className={cn(
+                      'w-20 h-20 rounded-3xl flex items-center justify-center shrink-0 relative z-10',
+                      'bg-surface/80 backdrop-blur-xl border border-white/[0.08]'
+                    )}>
+                      <div
+                        className="absolute inset-0 rounded-3xl opacity-20"
+                        style={{
+                          background: `radial-gradient(circle at center, ${item.accent}, transparent 70%)`,
+                        }}
+                      />
+                      <item.icon size={28} style={{ color: item.accent }} />
+                    </div>
+                    <div className={cn(
+                      'flex-1',
+                      i % 2 === 0 ? 'md:text-left' : 'md:text-right'
+                    )}>
+                      <div
+                        className="font-display text-sm font-bold mb-1 tracking-widest"
+                        style={{ color: item.accent }}
+                      >
+                        {item.step}
+                      </div>
+                      <h3 className="font-display text-xl md:text-2xl font-bold mb-2">{item.title}</h3>
+                      <p className="text-text-secondary">{item.desc}</p>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Protocol Matrix — 3D perspective cards with depth */}
+        <section className="py-24 px-4 relative">
+          <div className="max-w-5xl mx-auto">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: '-100px' }}
+              className="text-center mb-16"
+            >
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-accent-gold/10 border border-accent-gold/20 mb-6">
+                <Shield size={14} className="text-accent-gold" />
+                <span className="text-xs text-accent-gold">协议矩阵</span>
+              </div>
+              <h2 className="font-display text-3xl md:text-4xl font-bold mb-4">
+                核心<span className="text-gradient">协议</span>
+              </h2>
+              <p className="text-text-secondary max-w-md mx-auto">
+                SoulClone 的三大底层协议，确保 AI 克隆体真实可靠
+              </p>
+            </motion.div>
+
+            <div className="grid md:grid-cols-3 gap-8" style={{ perspective: '1200px' }}>
+              {protocols.map((protocol, i) => (
+                <NeuralCard
                   key={i}
-                  initial={{ opacity: 0, x: i % 2 === 0 ? -30 : 30 }}
-                  whileInView={{ opacity: 1, x: 0 }}
-                  viewport={{ once: true, margin: '-50px' }}
-                  transition={{ duration: 0.6 }}
-                  className="flex items-center gap-6 md:gap-10"
-                >
-                  <div className={cn(
-                    'w-20 h-20 md:w-24 md:h-24 rounded-3xl flex items-center justify-center shrink-0 font-display text-2xl md:text-3xl font-bold',
-                    i === 0 ? 'bg-accent-cyan/10 text-accent-cyan border border-accent-cyan/20' :
-                    i === 1 ? 'bg-accent-magenta/10 text-accent-magenta border border-accent-magenta/20' :
-                    'bg-accent-gold/10 text-accent-gold border border-accent-gold/20'
-                  )}>
-                    {item.step}
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="font-display text-xl md:text-2xl font-bold mb-2">{item.title}</h3>
-                    <p className="text-text-secondary">{item.desc}</p>
-                  </div>
-                </motion.div>
+                  icon={protocol.icon}
+                  title={protocol.title}
+                  desc={protocol.desc}
+                  accent={protocol.accent}
+                  index={i}
+                />
               ))}
             </div>
           </div>
         </section>
+
+        {/* SVG Liquid Divider */}
+        <div className="relative py-8 overflow-hidden">
+          <svg
+            viewBox="0 0 1200 120"
+            preserveAspectRatio="none"
+            className="absolute inset-0 w-full h-full opacity-[0.03]"
+          >
+            <path d="M0,60 Q200,0 400,60 T800,60 T1200,60 V120 H0 Z">
+              <animate
+                attributeName="d"
+                dur="4s"
+                repeatCount="indefinite"
+                values="M0,60 Q200,0 400,60 T800,60 T1200,60 V120 H0 Z;M0,60 Q200,120 400,60 T800,60 T1200,60 V120 H0 Z;M0,60 Q200,0 400,60 T800,60 T1200,60 V120 H0 Z"
+              />
+            </path>
+          </svg>
+        </div>
 
         {/* CTA */}
         <section className="py-24 px-4">
