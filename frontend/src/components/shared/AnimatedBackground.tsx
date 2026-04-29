@@ -10,7 +10,7 @@ interface Particle {
   alpha: number
 }
 
-export default function AnimatedBackground() {
+export default function AnimatedBackground({ opacity = 1 }: { opacity?: number }) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
 
   useEffect(() => {
@@ -75,7 +75,7 @@ export default function AnimatedBackground() {
     <canvas
       ref={canvasRef}
       className="absolute inset-0 pointer-events-none"
-      style={{ zIndex: 0 }}
+      style={{ zIndex: 0, opacity }}
     />
   )
 }

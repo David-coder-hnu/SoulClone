@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   ArrowLeft, Send, Sparkles, User, Phone,
-  Hand
+  Hand, MoreHorizontal
 } from 'lucide-react'
 import { formatDate } from '@/lib/utils'
 
@@ -54,6 +54,7 @@ export default function ChatRoomPage() {
   const [input, setInput] = useState('')
   const [isManualMode, setIsManualMode] = useState(false)
   const [showModeHint, setShowModeHint] = useState(false)
+  const [isTyping, setIsTyping] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
@@ -72,6 +73,19 @@ export default function ChatRoomPage() {
     setMessages((p) => [...p, newMsg])
     setInput('')
     inputRef.current?.focus()
+
+    // Simulate reply typing
+    setIsTyping(true)
+    setTimeout(() => {
+      setIsTyping(false)
+      const reply: Message = {
+        id: (Date.now() + 1).toString(),
+        is_from_me: false,
+        content: '听起来很棒！有机会一定要看看你的作品 ✨',
+        created_at: new Date().toISOString(),
+      }
+      setMessages((p) => [...p, reply])
+    }, 2000)
   }
 
   const toggleMode = () => {
@@ -84,8 +98,9 @@ export default function ChatRoomPage() {
 
   return (
     <div className="h-screen flex flex-col bg-background relative overflow-hidden">
-      {/* Background ambient glow */}
+      {/* Ambient glow */}
       <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[400px] h-[400px] bg-accent-cyan/3 rounded-full blur-[150px] pointer-events-none" />
+      <div className="absolute bottom-1/4 right-1/4 w-[300px] h-[300px] bg-accent-magenta/3 rounded-full blur-[120px] pointer-events-none" />
 
       {/* Header */}
       <div className="glass-strong border-b border-white/5 px-4 py-3 flex items-center gap-3 shrink-0 z-20">
@@ -100,9 +115,12 @@ export default function ChatRoomPage() {
 
         <div className="flex-1 flex items-center gap-3">
           <div className="relative">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-accent-cyan/30 to-accent-magenta/30 flex items-center justify-center">
-              <span className="font-display font-bold">雨</span>
-            </div>
+            <motion.div
+              whileHover={{ scale: 1.08 }}
+              className="w-10 h-10 rounded-xl bg-gradient-to-br from-accent-cyan/30 to-accent-magenta/30 flex items-center justify-center"
+            >
+              <span className="font-display font-bold text-sm">雨</span>
+            </motion.div>
             <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-accent-cyan border-2 border-background">
               <motion.div
                 animate={{ scale: [1, 1.5, 1], opacity: [0.5, 0, 0.5] }}
@@ -112,7 +130,7 @@ export default function ChatRoomPage() {
             </div>
           </div>
           <div>
-            <h2 className="font-medium">小雨</h2>
+            <h2 className="font-medium text-sm">小雨</h2>
             <div className="flex items-center gap-1 text-text-ghost text-xs">
               <Sparkles size={10} className="text-accent-gold" />
               <span>身份未知</span>
@@ -121,10 +139,17 @@ export default function ChatRoomPage() {
         </div>
 
         <div className="flex items-center gap-2">
-          <div className="hidden sm:flex items-center gap-1 px-3 py-1.5 rounded-full glass border border-white/5">
+          <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full glass border border-white/5">
             <Phone size={12} className="text-accent-gold" />
             <span className="text-xs text-text-secondary">亲密度 65</span>
           </div>
+          <motion.button
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+            className="p-2 rounded-xl hover:bg-white/5 transition-colors"
+          >
+            <MoreHorizontal size={18} className="text-text-secondary" />
+          </motion.button>
         </div>
       </div>
 
@@ -141,20 +166,53 @@ export default function ChatRoomPage() {
             >
               <motion.div
                 whileHover={{ scale: 1.02 }}
-                className={`max-w-[75%] px-4 py-3 rounded-2xl ${
+                className={`max-w-[80%] sm:max-w-[70%] px-4 py-3 rounded-2xl ${
                   msg.is_from_me
-                    ? 'bg-gradient-to-br from-accent-cyan/25 to-accent-cyan/10 text-text-primary rounded-br-md border border-accent-cyan/10'
+                    ? 'bg-gradient-to-br from-accent-cyan/25 to-accent-cyan/5 text-text-primary rounded-br-md border border-accent-cyan/15'
                     : 'glass border border-white/5 rounded-bl-md'
                 }`}
               >
                 <p className="text-sm leading-relaxed">{msg.content}</p>
-                <p className="text-[10px] text-text-ghost mt-1 text-right">
+                <p className="text-[10px] text-text-ghost mt-1.5 text-right">
                   {formatDate(msg.created_at)}
                 </p>
               </motion.div>
             </motion.div>
           ))}
         </AnimatePresence>
+
+        {/* Typing indicator */}
+        <AnimatePresence>
+          {isTyping && (
+            <motion.div
+              initial={{ opacity: 0, y: 5 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 5 }}
+              className="flex justify-start"
+            >
+              <div className="glass border border-white/5 rounded-2xl rounded-bl-md px-4 py-3">
+                <div className="flex items-center gap-1.5">
+                  <motion.div
+                    animate={{ y: [0, -4, 0] }}
+                    transition={{ duration: 0.5, repeat: Infinity, delay: 0 }}
+                    className="w-1.5 h-1.5 rounded-full bg-text-ghost"
+                  />
+                  <motion.div
+                    animate={{ y: [0, -4, 0] }}
+                    transition={{ duration: 0.5, repeat: Infinity, delay: 0.15 }}
+                    className="w-1.5 h-1.5 rounded-full bg-text-ghost"
+                  />
+                  <motion.div
+                    animate={{ y: [0, -4, 0] }}
+                    transition={{ duration: 0.5, repeat: Infinity, delay: 0.3 }}
+                    className="w-1.5 h-1.5 rounded-full bg-text-ghost"
+                  />
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         <div ref={messagesEndRef} />
       </div>
 
@@ -165,9 +223,9 @@ export default function ChatRoomPage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 20 }}
-            className="px-4 py-2 bg-accent-cyan/10 border-t border-accent-cyan/20 text-center z-20"
+            className="px-4 py-2.5 bg-accent-cyan/10 border-t border-accent-cyan/20 text-center z-20"
           >
-            <p className="text-accent-cyan text-sm">已切换为手动模式，现在由你亲自回复</p>
+            <p className="text-accent-cyan text-sm font-medium">已切换为手动模式，现在由你亲自回复</p>
           </motion.div>
         )}
       </AnimatePresence>
@@ -199,7 +257,7 @@ export default function ChatRoomPage() {
             className={`shrink-0 w-12 h-12 rounded-full flex items-center justify-center transition-all ${
               isManualMode
                 ? 'bg-gradient-to-br from-accent-cyan to-accent-magenta text-white shadow-lg shadow-accent-cyan/30'
-                : 'glass border border-white/10 text-text-secondary hover:text-accent-cyan'
+                : 'glass border border-white/10 text-text-secondary hover:text-accent-cyan hover:border-accent-cyan/30'
             }`}
           >
             {isManualMode ? <User size={20} /> : <Hand size={20} />}
