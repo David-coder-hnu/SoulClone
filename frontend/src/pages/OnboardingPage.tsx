@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Upload, MessageSquare, Brain, Sparkles, ChevronRight, Loader2 } from 'lucide-react'
+import { api } from '@/lib/api'
 
 
 const questions = [
@@ -40,7 +41,7 @@ const questions = [
 export default function OnboardingPage() {
   const [step, setStep] = useState<'questionnaire' | 'samples' | 'distilling' | 'complete'>('questionnaire')
   const [currentQ, setCurrentQ] = useState(0)
-  const [, setAnswers] = useState<Record<string, string>>({})
+  const [answers, setAnswers] = useState<Record<string, string>>({})
   const [chatSample, setChatSample] = useState('')
   const [progress, setProgress] = useState(0)
   const navigate = useNavigate()
@@ -54,14 +55,40 @@ export default function OnboardingPage() {
     }
   }
 
+  const [distillError, setDistillError] = useState('')
+
   const startDistillation = async () => {
     setStep('distilling')
-    // Animate progress
-    for (let i = 0; i <= 100; i += 2) {
-      setProgress(i)
-      await new Promise((r) => setTimeout(r, 80))
+    setDistillError('')
+    setProgress(0)
+
+    try {
+      await api.post('/distillation/start', {
+        questionnaire_answers: answers,
+        chat_samples: chatSample ? [chatSample] : [],
+        social_import: null,
+      })
+
+      // Poll for completion
+      for (let i = 0; i <= 60; i++) {
+        setProgress(Math.min(i * 1.6, 99))
+        await new Promise((r) => setTimeout(r, 1000))
+        try {
+          const statusRes = await api.get('/distillation/status')
+          if (statusRes.data.is_activated) {
+            setProgress(100)
+            setStep('complete')
+            return
+          }
+        } catch {
+          // continue polling
+        }
+      }
+      setStep('complete')
+    } catch (err: any) {
+      setDistillError(err.response?.data?.detail || '蒸馏失败，请重试')
+      setStep('samples')
     }
-    setStep('complete')
   }
 
   const handleComplete = () => {
@@ -162,6 +189,9 @@ export default function OnboardingPage() {
                 </p>
               </div>
 
+              {distillError && (
+                <p className="text-accent-magenta text-sm mb-4">{distillError}</p>
+              )}
               <button
                 onClick={startDistillation}
                 className="w-full py-3.5 rounded-xl bg-gradient-to-r from-accent-cyan to-accent-magenta text-white font-semibold transition-all hover:scale-[1.02] hover:shadow-lg"
