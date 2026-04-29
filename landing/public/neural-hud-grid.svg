@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" preserveAspectRatio="none">
+  <defs>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="1.5" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  <g stroke="rgba(0,240,255,0.12)" stroke-width="0.25" filter="url(#glow)" fill="none">
+    <!-- Hexagonal / triangular grid pattern -->
+    <path d="M0 14.43 L50 0 L100 14.43 L100 85.57 L50 100 L0 85.57 Z" />
+    <path d="M0 14.43 L50 28.87 L50 71.13 L0 85.57" />
+    <path d="M100 14.43 L50 28.87 L50 71.13 L100 85.57" />
+    <path d="M50 0 L50 28.87" />
+    <path d="M50 71.13 L50 100" />
+    <path d="M25 7.22 L25 21.65" />
+    <path d="M75 7.22 L75 21.65" />
+    <path d="M25 78.35 L25 92.78" />
+    <path d="M75 78.35 L75 92.78" />
+    <path d="M12.5 10.83 L12.5 46.57" />
+    <path d="M87.5 10.83 L87.5 46.57" />
+    <path d="M12.5 53.43 L12.5 89.17" />
+    <path d="M87.5 53.43 L87.5 89.17" />
+    <path d="M25 21.65 L75 21.65" />
+    <path d="M0 50 L100 50" />
+    <path d="M25 78.35 L75 78.35" />
+    <path d="M50 28.87 L0 50" />
+    <path d="M50 28.87 L100 50" />
+    <path d="M50 71.13 L0 50" />
+    <path d="M50 71.13 L100 50" />
+  </g>
+</svg>
