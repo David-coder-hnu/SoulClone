@@ -1,5 +1,3 @@
-from datetime import datetime, timezone
-
 from sqlalchemy import select, desc, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -49,7 +47,7 @@ class NotificationService:
         result = await self.db.execute(
             select(func.count(Notification.id)).where(
                 Notification.user_id == user_id,
-                Notification.is_read == False,
+                Notification.is_read.is_(False),
             )
         )
         return result.scalar() or 0
@@ -69,7 +67,7 @@ class NotificationService:
         result = await self.db.execute(
             select(Notification).where(
                 Notification.user_id == user_id,
-                Notification.is_read == False,
+                Notification.is_read.is_(False),
             )
         )
         notifications = result.scalars().all()

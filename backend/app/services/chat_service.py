@@ -53,7 +53,7 @@ class ChatService:
                 select(func.count(Message.id)).where(
                     Message.conversation_id == conv.id,
                     Message.sender_id == partner_id,
-                    Message.is_read == False,
+                    Message.is_read.is_(False),
                 )
             )
             unread_count = unread_result.scalar() or 0
@@ -133,7 +133,7 @@ class ChatService:
         await notif_service.create_notification(
             user_id=other_user_id,
             type="message",
-            title=f"新消息",
+            title="新消息",
             content=f"{sender_label}: {content[:40]}{'...' if len(content) > 40 else ''}",
             payload={"conversation_id": str(conversation_id), "message_id": str(msg.id)},
         )
