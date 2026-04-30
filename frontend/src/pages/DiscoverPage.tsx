@@ -11,7 +11,7 @@ import { DiscoverEmptyState, ErrorState, SkeletonCard } from '@/components/share
 import AmbientBackground from '@/components/shared/AmbientBackground'
 import { playSound } from '@/lib/sound'
 
-const SWIPE_THRESHOLD = 120
+const SWIPE_THRESHOLD = 100
 
 export default function DiscoverPage() {
   const { data: profiles, isLoading, error } = useDiscoverProfiles()
@@ -74,7 +74,7 @@ export default function DiscoverPage() {
             <DiscoverEmptyState />
           ) : (
             <FadeIn>
-              <div className="relative h-[520px]">
+              <div className="relative h-[480px] md:h-[520px]">
                 {/* Swipe Card */}
                 <motion.div
                   style={{ x, rotate, opacity }}

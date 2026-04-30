@@ -84,13 +84,11 @@ export default function ChatPage() {
                       <Card
                         variant="flat"
                         hoverable
-                        className={`flex items-center gap-4 py-4 px-5 relative overflow-hidden ${
-                          isHighIntimacy ? 'border-l-2 border-l-accent-cyan' : ''
-                        }`}
+                        className="flex items-center gap-4 py-4 px-5 relative overflow-hidden"
                       >
                         {/* High intimacy glow — One More Thing */}
                         {isHighIntimacy && (
-                          <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-accent-cyan via-accent-magenta to-accent-gold opacity-60" />
+                          <div className="absolute left-0 top-2 bottom-2 w-[3px] rounded-full bg-gradient-to-b from-accent-cyan via-accent-magenta to-accent-gold opacity-80 shadow-[0_0_8px_rgba(0,240,255,0.3)]" />
                         )}
 
                         {/* Avatar */}
@@ -124,7 +122,7 @@ export default function ChatPage() {
                             </span>
                           </div>
                           <p className={`text-sm truncate ${conv.unread > 0 ? 'text-text-primary font-medium' : 'text-text-secondary'}`}>
-                            {conv.last_message || '暂无消息'}
+                            {conv.last_message || <span className="text-text-ghost italic">暂无消息</span>}
                           </p>
                         </div>
 

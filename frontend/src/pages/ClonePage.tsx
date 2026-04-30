@@ -285,10 +285,14 @@ export default function ClonePage() {
                   <Card variant="flat">
                     <div className="flex items-center gap-2 mb-4">
                       <Activity size={18} className="text-accent-magenta" />
-                      <h3 className="font-medium">活跃度统计</h3>
+                      <h3 className="font-medium">孪生状态</h3>
                     </div>
                     <div className="space-y-3">
-                      {statItems.map((stat, i) => (
+                      {[
+                        { label: '平均回复', value: stats?.avg_response_time_sec ? `${stats.avg_response_time_sec}s` : '--', color: 'text-accent-cyan', bg: 'bg-accent-cyan' },
+                        { label: '成功率', value: stats?.success_rate ? `${Math.round(stats.success_rate * 100)}%` : '--', color: 'text-accent-magenta', bg: 'bg-accent-magenta' },
+                        { label: '当前心情', value: stats?.current_mood || '平静', color: 'text-accent-gold', bg: 'bg-accent-gold' },
+                      ].map((stat, i) => (
                         <motion.div
                           key={stat.label}
                           initial={{ opacity: 0, x: -10 }}
@@ -298,12 +302,10 @@ export default function ClonePage() {
                           className="flex items-center justify-between p-3 rounded-xl bg-bg-500/50 hover:bg-bg-500/80 transition-colors duration-150 cursor-default group"
                         >
                           <div className="flex items-center gap-3">
-                            <div className={`w-8 h-8 rounded-lg ${stat.bg}/10 flex items-center justify-center`}>
-                              <stat.icon size={16} className={stat.color} />
-                            </div>
+                            <div className={`w-2 h-2 rounded-full ${stat.bg}`} />
                             <span className="text-sm text-text-secondary group-hover:text-text-primary transition-colors duration-150">{stat.label}</span>
                           </div>
-                          <span className="font-mono font-bold text-text-primary">{stat.value}</span>
+                          <span className={`font-mono font-bold ${stat.color}`}>{stat.value}</span>
                         </motion.div>
                       ))}
                     </div>

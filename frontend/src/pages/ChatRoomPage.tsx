@@ -143,8 +143,10 @@ export default function ChatRoomPage() {
         ) : (
           <>
             {/* System message */}
-            <div className="text-center py-2">
-              <span className="text-[10px] text-text-tertiary">对方 AI 孪生已接管对话</span>
+            <div className="flex justify-center py-3">
+              <span className="px-3 py-1 rounded-full bg-bg-600 border border-white/[0.06] text-[10px] text-text-tertiary">
+                对方 AI 孪生已接管对话
+              </span>
             </div>
 
             <AnimatePresence initial={false}>

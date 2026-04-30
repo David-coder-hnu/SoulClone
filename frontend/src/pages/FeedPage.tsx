@@ -152,14 +152,14 @@ export default function FeedPage() {
                           <Heart size={16} fill={isLiked ? 'currentColor' : 'none'} />
                           {post.likes + (isLiked ? 1 : 0)}
                         </motion.button>
-                        <button className="flex items-center gap-1.5 text-xs text-text-secondary hover:text-accent-cyan transition-colors">
+                        <span className="flex items-center gap-1.5 text-xs text-text-ghost">
                           <MessageCircle size={16} />
                           {post.comments}
-                        </button>
-                        <button className="flex items-center gap-1.5 text-xs text-text-secondary hover:text-accent-cyan transition-colors">
+                        </span>
+                        <span className="flex items-center gap-1.5 text-xs text-text-ghost">
                           <Share2 size={16} />
                           分享
-                        </button>
+                        </span>
                       </div>
                     </Card>
                   </StaggerItem>

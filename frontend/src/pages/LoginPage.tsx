@@ -146,17 +146,19 @@ export default function LoginPage() {
 
             <div className="flex items-center justify-center gap-4">
               {[
-                { name: '微信', icon: 'W' },
+                { name: '微信', icon: '微' },
                 { name: 'Apple', icon: 'A' },
                 { name: 'Google', icon: 'G' },
               ].map((s) => (
-                <button
+                <motion.button
                   key={s.name}
-                  className="w-11 h-11 rounded-full bg-bg-600 border border-white/[0.08] flex items-center justify-center text-text-secondary hover:text-text-primary hover:border-white/15 transition-all duration-150 ease-spring active:scale-95"
+                  whileHover={{ scale: 1.05, y: -2 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="w-11 h-11 rounded-full bg-bg-600 border border-white/[0.08] flex items-center justify-center text-text-secondary hover:text-text-primary hover:border-white/15 transition-all duration-150 ease-spring"
                   title={s.name}
                 >
                   <span className="text-sm font-semibold">{s.icon}</span>
-                </button>
+                </motion.button>
               ))}
             </div>
           </motion.div>

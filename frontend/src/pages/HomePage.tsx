@@ -196,7 +196,11 @@ export default function HomePage() {
                   ))}
                 </div>
               ) : (
-                <p className="text-sm text-text-tertiary text-center py-6">暂无活动记录</p>
+                <div className="text-center py-8">
+                  <Activity size={24} className="text-text-ghost mx-auto mb-2" />
+                  <p className="text-sm text-text-tertiary">暂无活动记录</p>
+                  <p className="text-xs text-text-ghost mt-1">你的孪生还在熟悉这个世界</p>
+                </div>
               )}
             </Card>
           </FadeIn>
