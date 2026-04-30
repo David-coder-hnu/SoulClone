@@ -74,3 +74,5 @@ alembic.ini
 *.pem
 *.key
 .gstack/
+
+screenshots/
