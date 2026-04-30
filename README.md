@@ -218,9 +218,15 @@ SoulClone/
 | `POST` | `/api/v1/clones/me/activate` | 激活克隆体 |
 | `GET` | `/api/v1/conversations` | 对话列表（含对方资料、未读数、最后消息） |
 | `POST` | `/api/v1/conversations/{id}/takeover` | 真人接管 |
+| `GET` | `/api/v1/messages/{conversation_id}` | 消息历史 |
+| `POST` | `/api/v1/messages/{conversation_id}` | 发送消息 |
+| `WS` | `/ws/chat?token={jwt}` | WebSocket 实时聊天 |
 | `GET` | `/api/v1/matches/discover` | 发现匹配（含用户资料、兼容度） |
 | `GET` | `/api/v1/feed` | 社区动态（含作者信息） |
 | `GET` | `/api/v1/notifications` | 通知列表 |
+| `GET` | `/api/v1/notifications/unread-count` | 未读通知数 |
+| `POST` | `/api/v1/notifications/{id}/read` | 标记已读 |
+| `POST` | `/api/v1/notifications/read-all` | 全部已读 |
 
 ---
 
