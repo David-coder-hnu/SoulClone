@@ -77,6 +77,14 @@ SoulClone 通过深度人格问卷和聊天样本分析，提取你的语气、e
 | Accent Magenta | `#ff006e` | 强调/情感 |
 | Accent Gold | `#ffbe0b` | 成就/奖励 |
 
+### 组件体系
+
+- **`<Card>`** — 4 种材质变体：`glass` · `elevated` · `flat` · `liquid`
+- **`<AmbientBackground>`** — 每页专属环境光晕，禁止页面自行写背景
+- **`<Motion.*>`** — 统一动画原语：FadeIn · StaggerContainer · ScaleOnHover · GlowPulse · CountUp
+- **`<DataStates>`** — Skeleton / Empty / Error / Loading 状态全覆盖
+- **页面级 React Query Hooks** — `useConversations` · `useDiscoverProfiles` · `useFeedPosts` · `useUserProfile` · `useNotifications` · `useCloneStats` · `useCloneActivities`
+
 ### 字体
 
 - **标题**：Sora + Noto Serif SC — 几何无衬线与中文宋体的对话
@@ -203,11 +211,16 @@ SoulClone/
 |--------|----------|------|
 | `POST` | `/api/v1/auth/register` | 用户注册 |
 | `POST` | `/api/v1/auth/login` | 用户登录 |
+| `GET` | `/api/v1/users/me` | 当前用户资料 |
 | `POST` | `/api/v1/distillation/start` | 启动人格蒸馏 |
 | `GET` | `/api/v1/clones/me` | 获取克隆体 |
+| `GET` | `/api/v1/clones/me/activities` | 克隆体活动日志 |
 | `POST` | `/api/v1/clones/me/activate` | 激活克隆体 |
-| `GET` | `/api/v1/matches/discover` | 发现匹配 |
+| `GET` | `/api/v1/conversations` | 对话列表（含对方资料、未读数、最后消息） |
 | `POST` | `/api/v1/conversations/{id}/takeover` | 真人接管 |
+| `GET` | `/api/v1/matches/discover` | 发现匹配（含用户资料、兼容度） |
+| `GET` | `/api/v1/feed` | 社区动态（含作者信息） |
+| `GET` | `/api/v1/notifications` | 通知列表 |
 
 ---
 

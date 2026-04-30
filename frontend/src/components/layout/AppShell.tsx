@@ -2,6 +2,7 @@ import { useLocation, Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { Home, Compass, MessageCircle, Newspaper, User } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import PageTransition from '@/components/shared/PageTransition'
 
 const navItems = [
   { path: '/home', icon: Home, label: '主页' },
@@ -85,7 +86,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
       {/* Main Content */}
       <main className={cn('flex-1 relative', !hideNav && 'pb-20 md:pb-0 md:ml-64')}>
-        {children}
+        <PageTransition>{children}</PageTransition>
       </main>
 
       {/* Mobile Bottom Nav */}

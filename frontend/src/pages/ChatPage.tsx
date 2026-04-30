@@ -1,136 +1,156 @@
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Clock, MessageSquare, Search } from 'lucide-react'
+import {
+  MessageSquare, ChevronRight,
+} from 'lucide-react'
 import AppShell from '@/components/layout/AppShell'
-import { formatDate } from '@/lib/utils'
-import { Avatar } from '@/components/ui/Avatar'
+import { Card } from '@/components/ui/Card'
+import { useConversations } from '@/hooks/useConversations'
+import { FadeIn, StaggerContainer, StaggerItem, GlowPulse } from '@/components/shared/Motion'
+import { ChatEmptyState, ErrorState, SkeletonList } from '@/components/shared/DataStates'
+import AmbientBackground from '@/components/shared/AmbientBackground'
 
-const mockConversations = [
-  {
-    id: '1',
-    partner: { nickname: '小雨', avatar: null },
-    last_message: '哈哈，真的很有趣，刚才聊到了电影...',
-    last_message_time: new Date(Date.now() - 1000 * 60 * 5).toISOString(),
-    unread: 2,
-    intimacy: 65,
-    is_online: true,
-  },
-  {
-    id: '2',
-    partner: { nickname: '阿杰', avatar: null },
-    last_message: '周末一起去 hiking 吗？',
-    last_message_time: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
-    unread: 0,
-    intimacy: 42,
-    is_online: false,
-  },
-  {
-    id: '3',
-    partner: { nickname: '林夕', avatar: null },
-    last_message: '我最近在画一幅新的插画...',
-    last_message_time: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
-    unread: 1,
-    intimacy: 28,
-    is_online: true,
-  },
-]
+function timeAgo(dateStr: string): string {
+  const date = new Date(dateStr)
+  const now = new Date()
+  const diff = Math.floor((now.getTime() - date.getTime()) / 1000)
+  if (diff < 60) return '刚刚'
+  if (diff < 3600) return `${Math.floor(diff / 60)}分钟前`
+  if (diff < 86400) return `${Math.floor(diff / 3600)}小时前`
+  return `${Math.floor(diff / 86400)}天前`
+}
 
 export default function ChatPage() {
+  const { data: conversations, isLoading, error } = useConversations()
+  const [filter, setFilter] = useState<'all' | 'unread'>('all')
+
+  const filtered = conversations
+    ? filter === 'unread'
+      ? conversations.filter((c) => c.unread > 0)
+      : conversations
+    : []
+
+  if (error) {
+    return (
+      <AppShell>
+        <AmbientBackground variant="chat">
+          <div className="p-4 md:p-8 max-w-3xl mx-auto">
+            <ErrorState message="加载对话失败" onRetry={() => window.location.reload()} />
+          </div>
+        </AmbientBackground>
+      </AppShell>
+    )
+  }
+
   return (
     <AppShell>
-      <div className="p-4 md:p-8 max-w-2xl mx-auto relative">
-        <div className="fixed inset-0 mesh-gradient pointer-events-none" />
-        <div className="fixed top-1/3 left-1/2 -translate-x-1/2 w-[300px] h-[300px] bg-accent-cyan/2 rounded-full blur-[150px] pointer-events-none animate-breathe" />
-
-        <div className="relative z-10">
-          <div className="flex items-center justify-between mb-6">
-            <div>
+      <AmbientBackground variant="chat">
+        <div className="p-4 md:p-8 max-w-3xl mx-auto">
+          {/* Header */}
+          <FadeIn>
+            <div className="flex items-center justify-between mb-6">
               <h1 className="font-sans text-2xl font-bold">消息</h1>
-              <p className="text-text-secondary text-sm mt-0.5">{mockConversations.length} 个对话</p>
+              <div className="flex gap-2">
+                {(['all', 'unread'] as const).map((f) => (
+                  <button
+                    key={f}
+                    onClick={() => setFilter(f)}
+                    className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
+                      filter === f
+                        ? 'bg-accent-cyan/10 border-accent-cyan/30 text-accent-cyan'
+                        : 'bg-bg-600 border-white/[0.08] text-text-secondary hover:border-white/15'
+                    }`}
+                  >
+                    {f === 'all' ? '全部' : '未读'}
+                  </button>
+                ))}
+              </div>
             </div>
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className="p-2.5 rounded-xl bg-bg-600 border border-white/[0.08] hover:border-white/15 transition-all duration-150 ease-spring"
-            >
-              <Search size={18} className="text-text-secondary" />
-            </motion.button>
-          </div>
+          </FadeIn>
 
-          <div className="space-y-3">
-            {mockConversations.map((conv, i) => (
-              <motion.div
-                key={conv.id}
-                initial={{ opacity: 0, y: 15 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.08, type: 'spring', stiffness: 200 }}
-              >
-                <Link
-                  to={`/chat/${conv.id}`}
-                  className="flex items-center gap-4 p-4 rounded-2xl bg-bg-600 border border-white/[0.05] hover:bg-bg-500 transition-all duration-250 ease-liquid group hover:border-white/10"
-                >
-                  {/* Avatar */}
-                  <div className="relative shrink-0">
-                    <Avatar
-                      size="md"
-                      status={conv.is_online ? 'online' : 'offline'}
-                      fallback={conv.partner.nickname[0]}
-                    />
-                    {conv.unread > 0 && !conv.is_online && (
-                      <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-accent-magenta flex items-center justify-center text-[10px] font-bold text-white">
-                        {conv.unread}
-                      </div>
-                    )}
-                  </div>
+          {/* Conversation List */}
+          {isLoading ? (
+            <SkeletonList count={4} />
+          ) : filtered.length === 0 ? (
+            <ChatEmptyState onAction={() => { window.location.href = '/discover' }} />
+          ) : (
+            <StaggerContainer className="space-y-3">
+              {filtered.map((conv) => {
+                const isHighIntimacy = conv.intimacy >= 70
+                return (
+                  <StaggerItem key={conv.id}>
+                    <Link to={`/chat/${conv.id}`}>
+                      <Card
+                        variant="flat"
+                        hoverable
+                        className={`flex items-center gap-4 py-4 px-5 relative overflow-hidden ${
+                          isHighIntimacy ? 'border-l-2 border-l-accent-cyan' : ''
+                        }`}
+                      >
+                        {/* High intimacy glow — One More Thing */}
+                        {isHighIntimacy && (
+                          <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-accent-cyan via-accent-magenta to-accent-gold opacity-60" />
+                        )}
 
-                  {/* Content */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between mb-1">
-                      <h3 className="font-medium truncate group-hover:text-accent-cyan transition-colors duration-150">
-                        {conv.partner.nickname}
-                      </h3>
-                      <span className="text-text-tertiary text-xs flex items-center gap-1 shrink-0">
-                        <Clock size={11} />
-                        {formatDate(conv.last_message_time)}
-                      </span>
-                    </div>
-                    <p className="text-text-secondary text-sm truncate group-hover:text-text-primary transition-colors duration-150">
-                      {conv.last_message}
-                    </p>
-                  </div>
+                        {/* Avatar */}
+                        <div className="relative shrink-0">
+                          {conv.partner.avatar ? (
+                            <img
+                              src={conv.partner.avatar}
+                              alt={conv.partner.nickname}
+                              className="w-12 h-12 rounded-full object-cover border border-white/10"
+                            />
+                          ) : (
+                            <div className="w-12 h-12 rounded-full bg-bg-600 border border-white/10 flex items-center justify-center">
+                              <MessageSquare size={18} className="text-text-tertiary" />
+                            </div>
+                          )}
+                          {conv.partner.is_online && (
+                            <GlowPulse color="cyan">
+                              <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-accent-cyan border-2 border-background" />
+                            </GlowPulse>
+                          )}
+                        </div>
 
-                  {/* Intimacy */}
-                  <div className="hidden sm:flex flex-col items-end gap-1.5 shrink-0">
-                    <span className="text-[10px] text-text-tertiary uppercase tracking-wider">亲密度</span>
-                    <div className="w-14 h-1.5 bg-bg-600 rounded-full overflow-hidden">
-                      <motion.div
-                        initial={{ width: 0 }}
-                        animate={{ width: `${conv.intimacy}%` }}
-                        transition={{ delay: i * 0.1 + 0.3, type: 'spring', stiffness: 100 }}
-                        className="h-full bg-gradient-to-r from-accent-cyan to-accent-magenta"
-                      />
-                    </div>
-                    <span className="text-[10px] text-text-tertiary font-mono">{conv.intimacy}%</span>
-                  </div>
-                </Link>
-              </motion.div>
-            ))}
-          </div>
+                        {/* Content */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between mb-0.5">
+                            <span className="font-medium text-sm truncate">
+                              {conv.partner.nickname}
+                            </span>
+                            <span className="text-xs text-text-tertiary shrink-0 ml-2">
+                              {timeAgo(conv.last_message_time)}
+                            </span>
+                          </div>
+                          <p className={`text-sm truncate ${conv.unread > 0 ? 'text-text-primary font-medium' : 'text-text-secondary'}`}>
+                            {conv.last_message || '暂无消息'}
+                          </p>
+                        </div>
 
-          {/* Empty state hint */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.5 }}
-            className="mt-8 text-center"
-          >
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-bg-600 border border-white/[0.08] text-text-tertiary text-sm">
-              <MessageSquare size={14} />
-              滑动查看更多对话
-            </div>
-          </motion.div>
+                        {/* Unread + Chevron */}
+                        <div className="flex items-center gap-2 shrink-0">
+                          {conv.unread > 0 && (
+                            <motion.span
+                              initial={{ scale: 0 }}
+                              animate={{ scale: 1 }}
+                              transition={{ type: 'spring', stiffness: 500, damping: 15 }}
+                              className="px-2 py-0.5 rounded-full bg-accent-magenta text-white text-xs font-bold"
+                            >
+                              {conv.unread}
+                            </motion.span>
+                          )}
+                          <ChevronRight size={16} className="text-text-ghost" />
+                        </div>
+                      </Card>
+                    </Link>
+                  </StaggerItem>
+                )
+              })}
+            </StaggerContainer>
+          )}
         </div>
-      </div>
+      </AmbientBackground>
     </AppShell>
   )
 }

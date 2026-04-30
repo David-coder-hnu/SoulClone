@@ -1,279 +1,203 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import {
   MessageCircle, Heart, Users, Activity,
-  ChevronRight, Sparkles, Zap, Bell
+  ChevronRight, Sparkles, Bell
 } from 'lucide-react'
 import AppShell from '@/components/layout/AppShell'
+import { Card } from '@/components/ui/Card'
 import { useAuthStore } from '@/stores/authStore'
+import { useCloneStats } from '@/hooks/useCloneStats'
+import { useCloneActivities } from '@/hooks/useCloneActivities'
+import { useNotifications } from '@/hooks/useNotifications'
+import { FadeIn, StaggerContainer, StaggerItem, CountUp, GlowPulse } from '@/components/shared/Motion'
+import { SkeletonList, ErrorState } from '@/components/shared/DataStates'
+import AmbientBackground from '@/components/shared/AmbientBackground'
 
 export default function HomePage() {
   const { user } = useAuthStore()
-  const [onlineActive, setOnlineActive] = useState(false)
+  const navigate = useNavigate()
+  const { data: stats, isLoading: statsLoading, error: statsError } = useCloneStats()
+  const { data: activities, isLoading: actLoading, error: actError } = useCloneActivities()
+  const { data: notifData } = useNotifications()
 
-  const stats = [
-    { icon: MessageCircle, label: '今日消息', value: '24', color: 'text-accent-cyan', bg: 'bg-accent-cyan/10' },
-    { icon: Heart, label: '新匹配', value: '3', color: 'text-accent-magenta', bg: 'bg-accent-magenta/10' },
-    { icon: Users, label: '深入聊天', value: '2', color: 'text-accent-gold', bg: 'bg-accent-gold/10' },
-    { icon: Activity, label: '社区互动', value: '7', color: 'text-accent-cyan', bg: 'bg-accent-cyan/10' },
-  ]
+  const [onlineActive, setOnlineActive] = useState(stats?.status === 'active')
+  const unreadCount = notifData?.unread_count || 0
 
-  const activities = [
-    { action: '回复了 小雨 的消息', time: '5分钟前', type: 'message' },
-    { action: '在动态下评论了', time: '12分钟前', type: 'comment' },
-    { action: '与 阿杰 的亲密度达到 65', time: '30分钟前', type: 'intimacy' },
-    { action: '浏览了推荐列表', time: '1小时前', type: 'browse' },
-  ]
+  // Stats with real data fallback
+  const statItems = stats ? [
+    { icon: MessageCircle, label: '今日消息', value: stats.total_messages_sent || 0, color: 'text-accent-cyan', bg: 'bg-accent-cyan' },
+    { icon: Heart, label: '新匹配', value: stats.total_matches || 0, color: 'text-accent-magenta', bg: 'bg-accent-magenta' },
+    { icon: Users, label: '深入聊天', value: stats.total_conversations || 0, color: 'text-accent-gold', bg: 'bg-accent-gold' },
+    { icon: Activity, label: '社区互动', value: (stats.total_posts || 0) + (stats.total_comments || 0), color: 'text-accent-cyan', bg: 'bg-accent-cyan' },
+  ] : []
+
+  const isLoading = statsLoading || actLoading
+
+  if (statsError || actError) {
+    return (
+      <AppShell>
+        <AmbientBackground variant="home">
+          <div className="p-4 md:p-8 max-w-5xl mx-auto">
+            <ErrorState message="加载失败，请重试" onRetry={() => window.location.reload()} />
+          </div>
+        </AmbientBackground>
+      </AppShell>
+    )
+  }
 
   return (
     <AppShell>
-      <div className="p-4 md:p-8 max-w-5xl mx-auto relative">
-        {/* Ambient background */}
-        <div className="fixed top-0 left-1/4 w-[500px] h-[500px] bg-accent-cyan/2 rounded-full blur-[150px] pointer-events-none" />
-
-        <div className="relative z-10">
+      <AmbientBackground variant="home">
+        <div className="p-4 md:p-8 max-w-5xl mx-auto">
           {/* Header */}
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="flex items-center justify-between mb-8"
-          >
-            <div>
-              <h1 className="font-sans text-2xl md:text-3xl font-bold">
-                你好, <span className="text-accent-cyan">{user?.nickname || '探索者'}</span>
-              </h1>
-              <p className="text-text-secondary mt-1">你的在线状态今天已活跃 3 小时</p>
-            </div>
-            <div className="flex items-center gap-3">
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className="relative p-2.5 rounded-xl bg-bg-600 border border-white/[0.08] hover:border-white/15 transition-colors"
-              >
-                <Bell size={20} className="text-text-secondary" />
-                <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-accent-magenta" />
-              </motion.button>
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-full bg-bg-600 border border-accent-cyan/20 cursor-pointer hover:border-accent-cyan/40 transition-colors"
-                onClick={() => setOnlineActive(!onlineActive)}
-              >
-                <motion.div
-                  animate={onlineActive ? { scale: [1, 1.4, 1] } : {}}
-                  transition={{ duration: 1.5, repeat: Infinity }}
-                  className={`w-2 h-2 rounded-full ${onlineActive ? 'bg-accent-cyan' : 'bg-text-ghost'}`}
-                />
-                <span className="text-sm">{onlineActive ? '在线中' : '离线中'}</span>
-              </motion.button>
-            </div>
-          </motion.div>
-
-          {/* Online Status Card */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="bg-bg-500 border border-white/[0.06] rounded-2xl p-6 md:p-8 mb-8 relative overflow-hidden"
-          >
-
-            <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-              <div className="flex items-center gap-4">
-                <div className="relative">
-                  <motion.div
-                    whileHover={{ rotate: 5, scale: 1.05 }}
-                    className="w-18 h-18 md:w-16 md:h-16 rounded-2xl bg-gradient-to-br from-accent-cyan to-accent-magenta flex items-center justify-center shadow-lg shadow-accent-cyan/20"
-                  >
-                    <Sparkles size={28} className="text-white" />
-                  </motion.div>
-                  {onlineActive && (
-                    <motion.div
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-accent-cyan border-2 border-background"
-                    >
-                      <motion.div
-                        animate={{ scale: [1, 1.8, 1], opacity: [0.6, 0, 0.6] }}
-                        transition={{ duration: 2, repeat: Infinity }}
-                        className="absolute inset-0 rounded-full bg-accent-cyan"
-                      />
-                    </motion.div>
-                  )}
-                </div>
-                <div>
-                  <h2 className="font-sans text-xl font-bold">在线状态</h2>
-                  <p className="text-text-secondary text-sm">当前模式：{onlineActive ? '自动' : '手动'}</p>
-                </div>
+          <FadeIn>
+            <div className="flex items-center justify-between mb-8">
+              <div>
+                <h1 className="font-sans text-2xl md:text-3xl font-bold">
+                  你好, <span className="text-accent-cyan">{user?.nickname || '探索者'}</span>
+                </h1>
+                <p className="text-text-secondary mt-1">
+                  {stats?.status === 'active'
+                    ? '你的在线状态正在自动运行'
+                    : '你的在线状态当前离线'}
+                </p>
               </div>
-
               <div className="flex items-center gap-3">
+                {/* Notification Bell with bounce */}
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
-                  onClick={() => setOnlineActive(!onlineActive)}
-                  className={`px-6 py-3 rounded-xl font-semibold transition-all border ${
-                    onlineActive
-                      ? 'bg-accent-magenta/15 text-accent-magenta border-accent-magenta/30 hover:bg-accent-magenta/25 hover:shadow-lg hover:shadow-accent-magenta/10'
-                      : 'bg-accent-cyan/15 text-accent-cyan border-accent-cyan/30 hover:bg-accent-cyan/25 hover:shadow-lg hover:shadow-accent-cyan/10'
-                  }`}
+                  className="relative p-2.5 rounded-xl bg-bg-600 border border-white/[0.08] hover:border-white/15 transition-colors"
+                  onClick={() => navigate('/notifications')}
                 >
-                  {onlineActive ? '暂停自动' : '开启自动'}
+                  <Bell size={20} className="text-text-secondary" />
+                  {unreadCount > 0 && (
+                    <motion.span
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      transition={{ type: 'spring', stiffness: 500, damping: 15 }}
+                      className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-accent-magenta"
+                    />
+                  )}
                 </motion.button>
-                <Link
-                  to="/clone"
-                  className="px-6 py-3 rounded-xl bg-bg-600 border border-white/[0.08] text-text-primary font-semibold hover:bg-bg-500 transition-colors"
+
+                {/* Online Toggle */}
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  className={`flex items-center gap-2 px-4 py-2.5 rounded-full border transition-all ${
+                    onlineActive
+                      ? 'bg-accent-cyan/10 border-accent-cyan/30 text-accent-cyan'
+                      : 'bg-bg-600 border-white/[0.08] text-text-secondary'
+                  }`}
+                  onClick={() => setOnlineActive(!onlineActive)}
                 >
-                  管理
-                </Link>
+                  <motion.div
+                    animate={onlineActive ? { scale: [1, 1.4, 1] } : {}}
+                    transition={{ duration: 1.5, repeat: Infinity }}
+                    className={`w-2 h-2 rounded-full ${onlineActive ? 'bg-accent-cyan' : 'bg-text-ghost'}`}
+                  />
+                  <span className="text-sm">{onlineActive ? '在线中' : '离线中'}</span>
+                </motion.button>
               </div>
             </div>
+          </FadeIn>
 
-            {/* Stats */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6 pt-6 border-t border-white/5">
-              {stats.map((stat, i) => (
-                <motion.div
-                  key={stat.label}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.08, type: 'spring', stiffness: 200 }}
-                  whileHover={{ y: -4, scale: 1.02 }}
-                  className="text-center p-4 rounded-2xl bg-bg-600 border border-white/[0.05] hover:bg-bg-500 transition-all cursor-default group"
-                >
-                  <div className={`w-10 h-10 rounded-xl ${stat.bg} flex items-center justify-center mx-auto mb-2 group-hover:scale-110 transition-transform`}>
-                    <stat.icon size={18} className={stat.color} />
+          {/* Online Status Card — elevated + conic glow when active */}
+          <FadeIn delay={0.05}>
+            <div className={onlineActive ? 'conic-glow' : ''}>
+              <Card variant="elevated" className="mb-8">
+                <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+                  <div className="flex items-center gap-4">
+                    <GlowPulse color="cyan">
+                      <div className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-all ${
+                        onlineActive
+                          ? 'bg-gradient-to-br from-accent-cyan to-accent-magenta'
+                          : 'bg-bg-600 border border-white/10'
+                      }`}>
+                        <Sparkles size={24} className={onlineActive ? 'text-white' : 'text-text-disabled'} />
+                      </div>
+                    </GlowPulse>
+                    <div>
+                      <h2 className="font-sans text-xl font-bold">自动模式</h2>
+                      <p className="text-text-secondary text-sm">
+                        {onlineActive ? '正在替你社交、匹配、维系关系' : '离线中，你的孪生不会主动行动'}
+                      </p>
+                    </div>
                   </div>
-                  <motion.p
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    transition={{ delay: i * 0.08 + 0.2, type: 'spring' }}
-                    className="font-sans text-2xl font-bold"
+                  <Link
+                    to="/clone"
+                    className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-accent-cyan/10 border border-accent-cyan/30 text-accent-cyan text-sm font-medium hover:bg-accent-cyan/20 transition-colors"
                   >
-                    {stat.value}
-                  </motion.p>
-                  <p className="text-text-ghost text-xs mt-1">{stat.label}</p>
-                </motion.div>
-              ))}
-            </div>
-          </motion.div>
-
-          {/* Activity Feed */}
-          <div className="grid md:grid-cols-2 gap-6">
-            {/* Recent Activity */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 }}
-              className="bg-bg-500 border border-white/[0.06] rounded-2xl p-6 relative overflow-hidden"
-            >
-              <div className="absolute top-0 right-0 w-32 h-32 bg-accent-cyan/3 rounded-full blur-[50px] pointer-events-none" />
-              <div className="relative z-10">
-                <div className="flex items-center justify-between mb-6">
-                  <div className="flex items-center gap-2">
-                    <Zap size={18} className="text-accent-cyan" />
-                    <h3 className="font-sans text-lg font-bold">最近活动</h3>
-                  </div>
-                  <Link to="/clone" className="text-accent-cyan text-sm hover:text-accent-cyan/80 transition-colors flex items-center gap-1 group">
-                    查看全部 <ChevronRight size={14} className="group-hover:translate-x-1 transition-transform" />
+                    管理孪生
+                    <ChevronRight size={16} />
                   </Link>
                 </div>
+              </Card>
+            </div>
+          </FadeIn>
+
+          {/* Stats Grid */}
+          {isLoading ? (
+            <SkeletonList count={4} />
+          ) : (
+            <StaggerContainer className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+              {statItems.map((stat) => (
+                <StaggerItem key={stat.label}>
+                  <Card variant="flat" hoverable className="text-center">
+                    <div className={`w-10 h-10 rounded-xl ${stat.bg}/10 flex items-center justify-center mx-auto mb-3`}>
+                      <stat.icon size={18} className={stat.color} />
+                    </div>
+                    <p className="font-mono text-2xl font-bold text-text-primary">
+                      <CountUp target={stat.value} />
+                    </p>
+                    <p className="text-xs text-text-secondary mt-1">{stat.label}</p>
+                  </Card>
+                </StaggerItem>
+              ))}
+            </StaggerContainer>
+          )}
+
+          {/* Activities */}
+          <FadeIn delay={0.2}>
+            <Card variant="flat">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-medium">最近动态</h3>
+                <Link to="/clone" className="text-xs text-accent-cyan hover:underline">查看全部</Link>
+              </div>
+              {isLoading ? (
                 <div className="space-y-3">
-                  {activities.map((item, i) => (
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="h-12 bg-white/5 rounded-xl animate-pulse" />
+                  ))}
+                </div>
+              ) : activities && activities.length > 0 ? (
+                <div className="space-y-3">
+                  {activities.slice(0, 5).map((activity, i) => (
                     <motion.div
-                      key={i}
+                      key={activity.id}
                       initial={{ opacity: 0, x: -10 }}
                       animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.2 + i * 0.05 }}
-                      whileHover={{ x: 4 }}
-                      className="flex items-center gap-3 p-3 rounded-xl bg-surface/50 hover:bg-surface/80 transition-colors group cursor-pointer"
+                      transition={{ delay: 0.3 + i * 0.05 }}
+                      className="flex items-center gap-3 p-3 rounded-xl bg-bg-600/50 hover:bg-bg-600 transition-colors"
                     >
-                      <div className="w-9 h-9 rounded-lg bg-accent-cyan/10 flex items-center justify-center shrink-0 group-hover:bg-accent-cyan/20 transition-colors">
-                        <Activity size={14} className="text-accent-cyan" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm truncate">{item.action}</p>
-                        <p className="text-text-ghost text-xs">{item.time}</p>
-                      </div>
+                      <div className="w-1.5 h-1.5 rounded-full bg-accent-cyan/60" />
+                      <span className="text-sm text-text-secondary flex-1">{activity.description || activity.action_type}</span>
+                      <span className="text-xs text-text-tertiary font-mono">
+                        {new Date(activity.created_at).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}
+                      </span>
                     </motion.div>
                   ))}
                 </div>
-              </div>
-            </motion.div>
-
-            {/* Pending Actions */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-              className="bg-bg-500 border border-white/[0.06] rounded-2xl p-6 relative overflow-hidden"
-            >
-              <div className="absolute bottom-0 left-0 w-32 h-32 bg-accent-magenta/3 rounded-full blur-[50px] pointer-events-none" />
-              <div className="relative z-10">
-                <div className="flex items-center justify-between mb-6">
-                  <div className="flex items-center gap-2">
-                    <Bell size={18} className="text-accent-gold" />
-                    <h3 className="font-sans text-lg font-bold">待处理</h3>
-                  </div>
-                  <motion.span
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    className="px-2.5 py-0.5 rounded-full bg-accent-gold/10 text-accent-gold text-xs font-medium"
-                  >
-                    2
-                  </motion.span>
-                </div>
-                <div className="space-y-4">
-                  <motion.div
-                    whileHover={{ scale: 1.01, y: -2 }}
-                    className="p-4 rounded-2xl bg-gradient-to-r from-accent-magenta/10 to-transparent border border-accent-magenta/20 hover:border-accent-magenta/35 transition-all cursor-pointer group"
-                  >
-                    <div className="flex items-start gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-accent-magenta/20 flex items-center justify-center shrink-0">
-                        <Heart size={18} className="text-accent-magenta" />
-                      </div>
-                      <div className="flex-1">
-                        <p className="font-medium text-sm">约会邀请请求</p>
-                        <p className="text-text-secondary text-xs mt-1 leading-relaxed">
-                          系统认为与 小雨 的感情已足够深入，提议周末见面。你需要批准或修改。
-                        </p>
-                        <div className="flex gap-2 mt-3">
-                          <button className="px-4 py-2 rounded-lg bg-accent-cyan/15 text-accent-cyan text-xs font-medium hover:bg-accent-cyan/25 transition-colors">
-                            查看详情
-                          </button>
-                          <button className="px-4 py-2 rounded-lg bg-white/5 text-text-secondary text-xs font-medium hover:bg-white/10 transition-colors">
-                            稍后处理
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  </motion.div>
-
-                  <motion.div
-                    whileHover={{ scale: 1.01, y: -2 }}
-                    className="p-4 rounded-2xl bg-gradient-to-r from-accent-gold/10 to-transparent border border-accent-gold/20 hover:border-accent-gold/35 transition-all cursor-pointer group"
-                  >
-                    <div className="flex items-start gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-accent-gold/20 flex items-center justify-center shrink-0">
-                        <MessageCircle size={18} className="text-accent-gold" />
-                      </div>
-                      <div className="flex-1">
-                        <p className="font-medium text-sm">话题确认</p>
-                        <p className="text-text-secondary text-xs mt-1 leading-relaxed">
-                          有一个话题需要你的确认，系统建议你先看看再决定如何回复。
-                        </p>
-                        <div className="flex gap-2 mt-3">
-                          <button className="px-4 py-2 rounded-lg bg-accent-cyan/15 text-accent-cyan text-xs font-medium hover:bg-accent-cyan/25 transition-colors">
-                            立即查看
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  </motion.div>
-                </div>
-              </div>
-            </motion.div>
-          </div>
+              ) : (
+                <p className="text-sm text-text-tertiary text-center py-6">暂无活动记录</p>
+              )}
+            </Card>
+          </FadeIn>
         </div>
-      </div>
+      </AmbientBackground>
     </AppShell>
   )
 }

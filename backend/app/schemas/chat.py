@@ -14,6 +14,12 @@ class ConversationOut(BaseModel):
     relationship_stage: str
     last_message_at: datetime | None = None
     created_at: datetime
+    # Enriched fields
+    partner_nickname: str | None = None
+    partner_avatar: str | None = None
+    partner_is_online: bool = False
+    last_message_preview: str | None = None
+    unread_count: int = 0
 
     class Config:
         from_attributes = True

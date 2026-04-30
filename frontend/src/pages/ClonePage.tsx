@@ -6,6 +6,8 @@ import AppShell from '@/components/layout/AppShell'
 import { Button } from '@/components/ui/Button'
 import { Avatar } from '@/components/ui/Avatar'
 import { Badge } from '@/components/ui/Badge'
+import { Card } from '@/components/ui/Card'
+import AmbientBackground from '@/components/shared/AmbientBackground'
 import { useCloneProfile } from '@/hooks/useCloneProfile'
 import { useCloneStats } from '@/hooks/useCloneStats'
 import { useCloneActivities } from '@/hooks/useCloneActivities'
@@ -71,20 +73,19 @@ export default function ClonePage() {
   if (isLoading) {
     return (
       <AppShell>
-        <div className="flex items-center justify-center h-[60vh]">
-          <Loader2 size={32} className="animate-spin text-accent-cyan" />
-        </div>
+        <AmbientBackground variant="clone">
+          <div className="flex items-center justify-center h-[60vh]">
+            <Loader2 size={32} className="animate-spin text-accent-cyan" />
+          </div>
+        </AmbientBackground>
       </AppShell>
     )
   }
 
   return (
     <AppShell>
-      <div className="p-4 md:p-8 max-w-6xl mx-auto relative">
-        <div className="fixed inset-0 mesh-gradient pointer-events-none" />
-        <div className="fixed top-1/3 left-1/2 -translate-x-1/2 w-[400px] h-[400px] bg-accent-cyan/2 rounded-full blur-[150px] pointer-events-none animate-breathe" />
-
-        <div className="relative z-10">
+      <AmbientBackground variant="clone">
+        <div className="p-4 md:p-8 max-w-6xl mx-auto">
           {/* Header */}
           <div className="flex items-center justify-between mb-6">
             <div>
@@ -100,25 +101,26 @@ export default function ClonePage() {
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="bg-bg-500 border border-white/[0.06] rounded-2xl p-6 md:p-8 relative overflow-hidden"
               >
-                <div className="relative z-10 flex flex-col items-center text-center">
-                  <Avatar size="xl" ring="cyan" status={active ? 'ai-twin-online' : 'ai-twin-offline'} fallback="AI" />
-                  <h2 className="font-sans text-xl font-bold mt-4">{stats?.name || '你的数字孪生'}</h2>
-                  <Badge variant={active ? 'cyan' : 'default'} size="sm" className="mt-2">
-                    {active ? 'AI 孪生在线' : 'AI 孪生离线'}
-                  </Badge>
+                <Card variant="elevated">
+                  <div className="relative z-10 flex flex-col items-center text-center">
+                    <Avatar size="xl" ring="cyan" status={active ? 'ai-twin-online' : 'ai-twin-offline'} fallback="AI" />
+                    <h2 className="font-sans text-xl font-bold mt-4">{stats?.name || '你的数字孪生'}</h2>
+                    <Badge variant={active ? 'cyan' : 'default'} size="sm" className="mt-2">
+                      {active ? 'AI 孪生在线' : 'AI 孪生离线'}
+                    </Badge>
 
-                  {/* Stats Row */}
-                  <div className="grid grid-cols-3 gap-4 w-full mt-6">
-                    {statItems.map((stat) => (
-                      <div key={stat.label} className="text-center">
-                        <p className="font-mono text-2xl font-bold text-text-primary">{stat.value}</p>
-                        <p className="text-xs text-text-secondary mt-0.5">{stat.label}</p>
-                      </div>
-                    ))}
+                    {/* Stats Row */}
+                    <div className="grid grid-cols-3 gap-4 w-full mt-6">
+                      {statItems.map((stat) => (
+                        <div key={stat.label} className="text-center">
+                          <p className="font-mono text-2xl font-bold text-text-primary">{stat.value}</p>
+                          <p className="text-xs text-text-secondary mt-0.5">{stat.label}</p>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                </div>
+                </Card>
               </motion.div>
 
               {/* Calibration CTA */}
@@ -127,18 +129,19 @@ export default function ClonePage() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.2 }}
                 whileHover={{ scale: 1.01, y: -2 }}
-                className="bg-bg-600 border border-accent-cyan/20 rounded-xl p-5 cursor-pointer hover:border-accent-cyan/40 hover:bg-bg-500 transition-all duration-250 ease-liquid group"
                 onClick={() => navigate('/calibrate')}
               >
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-xl bg-accent-cyan/10 flex items-center justify-center group-hover:bg-accent-cyan/20 transition-colors duration-150">
-                    <FlaskConical size={22} className="text-accent-cyan" />
+                <Card variant="flat" hoverable>
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-xl bg-accent-cyan/10 flex items-center justify-center group-hover:bg-accent-cyan/20 transition-colors duration-150">
+                      <FlaskConical size={22} className="text-accent-cyan" />
+                    </div>
+                    <div>
+                      <h3 className="font-medium">风格校准实验室</h3>
+                      <p className="text-text-secondary text-sm">测试回复风格，提供反馈让系统更精准模仿你</p>
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="font-medium">风格校准实验室</h3>
-                    <p className="text-text-secondary text-sm">测试回复风格，提供反馈让系统更精准模仿你</p>
-                  </div>
-                </div>
+                </Card>
               </motion.div>
             </div>
 
@@ -149,10 +152,10 @@ export default function ClonePage() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.1 }}
-                className="bg-bg-500 border border-white/[0.06] rounded-2xl p-6 md:p-8 relative overflow-hidden"
               >
-                <div className="relative z-10">
-                  <div className="flex items-center justify-between mb-8">
+                <Card variant="elevated">
+                  <div className="relative z-10">
+                    <div className="flex items-center justify-between mb-8">
                     <div className="flex items-center gap-4">
                       <motion.div
                         animate={active ? {
@@ -232,7 +235,8 @@ export default function ClonePage() {
                       {autonomy > 7 && '激进：非常主动，积极寻求新匹配'}
                     </motion.p>
                   </div>
-                </div>
+                  </div>
+                </Card>
               </motion.div>
 
               {/* Personality + Stats Grid */}
@@ -241,67 +245,69 @@ export default function ClonePage() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.3 }}
-                  className="bg-bg-600 border border-white/[0.05] rounded-xl p-5"
                 >
-                  <div className="flex items-center gap-2 mb-4">
-                    <Brain size={18} className="text-accent-cyan" />
-                    <h3 className="font-medium">人格核心</h3>
-                  </div>
-                  <div className="space-y-4">
-                    {traits.map((trait, i) => (
-                      <motion.div
-                        key={trait.label}
-                        initial={{ opacity: 0, x: -10 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: 0.3 + i * 0.05 }}
-                      >
-                        <div className="flex justify-between text-xs mb-1.5">
-                          <span className="text-text-secondary">{trait.label}</span>
-                          <span className="text-text-primary font-mono font-medium">{trait.value}</span>
-                        </div>
-                        <div className="h-1.5 bg-bg-600 rounded-full overflow-hidden">
-                          <motion.div
-                            initial={{ width: 0 }}
-                            animate={{ width: `${trait.value}%` }}
-                            transition={{ delay: 0.4 + i * 0.08, type: 'spring', stiffness: 100 }}
-                            className="h-full bg-gradient-to-r from-accent-cyan to-accent-magenta"
-                          />
-                        </div>
-                      </motion.div>
-                    ))}
-                  </div>
+                  <Card variant="flat">
+                    <div className="flex items-center gap-2 mb-4">
+                      <Brain size={18} className="text-accent-cyan" />
+                      <h3 className="font-medium">人格核心</h3>
+                    </div>
+                    <div className="space-y-4">
+                      {traits.map((trait, i) => (
+                        <motion.div
+                          key={trait.label}
+                          initial={{ opacity: 0, x: -10 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: 0.3 + i * 0.05 }}
+                        >
+                          <div className="flex justify-between text-xs mb-1.5">
+                            <span className="text-text-secondary">{trait.label}</span>
+                            <span className="text-text-primary font-mono font-medium">{trait.value}</span>
+                          </div>
+                          <div className="h-1.5 bg-bg-600 rounded-full overflow-hidden">
+                            <motion.div
+                              initial={{ width: 0 }}
+                              animate={{ width: `${trait.value}%` }}
+                              transition={{ delay: 0.4 + i * 0.08, type: 'spring', stiffness: 100 }}
+                              className="h-full bg-gradient-to-r from-accent-cyan to-accent-magenta"
+                            />
+                          </div>
+                        </motion.div>
+                      ))}
+                    </div>
+                  </Card>
                 </motion.div>
 
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.4 }}
-                  className="bg-bg-600 border border-white/[0.05] rounded-xl p-5"
                 >
-                  <div className="flex items-center gap-2 mb-4">
-                    <Activity size={18} className="text-accent-magenta" />
-                    <h3 className="font-medium">活跃度统计</h3>
-                  </div>
-                  <div className="space-y-3">
-                    {statItems.map((stat, i) => (
-                      <motion.div
-                        key={stat.label}
-                        initial={{ opacity: 0, x: -10 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: 0.4 + i * 0.08 }}
-                        whileHover={{ x: 4 }}
-                        className="flex items-center justify-between p-3 rounded-xl bg-bg-500/50 hover:bg-bg-500/80 transition-colors duration-150 cursor-default group"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className={`w-8 h-8 rounded-lg ${stat.bg}/10 flex items-center justify-center`}>
-                            <stat.icon size={16} className={stat.color} />
+                  <Card variant="flat">
+                    <div className="flex items-center gap-2 mb-4">
+                      <Activity size={18} className="text-accent-magenta" />
+                      <h3 className="font-medium">活跃度统计</h3>
+                    </div>
+                    <div className="space-y-3">
+                      {statItems.map((stat, i) => (
+                        <motion.div
+                          key={stat.label}
+                          initial={{ opacity: 0, x: -10 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: 0.4 + i * 0.08 }}
+                          whileHover={{ x: 4 }}
+                          className="flex items-center justify-between p-3 rounded-xl bg-bg-500/50 hover:bg-bg-500/80 transition-colors duration-150 cursor-default group"
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className={`w-8 h-8 rounded-lg ${stat.bg}/10 flex items-center justify-center`}>
+                              <stat.icon size={16} className={stat.color} />
+                            </div>
+                            <span className="text-sm text-text-secondary group-hover:text-text-primary transition-colors duration-150">{stat.label}</span>
                           </div>
-                          <span className="text-sm text-text-secondary group-hover:text-text-primary transition-colors duration-150">{stat.label}</span>
-                        </div>
-                        <span className="font-mono font-bold text-text-primary">{stat.value}</span>
-                      </motion.div>
-                    ))}
-                  </div>
+                          <span className="font-mono font-bold text-text-primary">{stat.value}</span>
+                        </motion.div>
+                      ))}
+                    </div>
+                  </Card>
                 </motion.div>
               </div>
 
@@ -310,31 +316,32 @@ export default function ClonePage() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.5 }}
-                className="bg-bg-600 border border-white/[0.05] rounded-xl p-5"
               >
-                <h3 className="font-medium mb-4">今日活动</h3>
-                <div className="space-y-3">
-                  {activities && activities.length > 0 ? activities.slice(0, 10).map((activity, i) => (
-                    <motion.div
-                      key={activity.id}
-                      initial={{ opacity: 0, x: -10 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.5 + i * 0.08 }}
-                      className="flex items-center gap-3"
-                    >
-                      <span className="text-xs text-text-tertiary font-mono w-10">{formatTime(activity.created_at)}</span>
-                      <div className="w-1.5 h-1.5 rounded-full bg-accent-cyan/60" />
-                      <span className="text-sm text-text-secondary">{activity.description || activity.action_type}</span>
-                    </motion.div>
-                  )) : (
-                    <p className="text-sm text-text-tertiary">暂无活动记录</p>
-                  )}
-                </div>
+                <Card variant="flat">
+                  <h3 className="font-medium mb-4">今日活动</h3>
+                  <div className="space-y-3">
+                    {activities && activities.length > 0 ? activities.slice(0, 10).map((activity, i) => (
+                      <motion.div
+                        key={activity.id}
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.5 + i * 0.08 }}
+                        className="flex items-center gap-3"
+                      >
+                        <span className="text-xs text-text-tertiary font-mono w-10">{formatTime(activity.created_at)}</span>
+                        <div className="w-1.5 h-1.5 rounded-full bg-accent-cyan/60" />
+                        <span className="text-sm text-text-secondary">{activity.description || activity.action_type}</span>
+                      </motion.div>
+                    )) : (
+                      <p className="text-sm text-text-tertiary">暂无活动记录</p>
+                    )}
+                  </div>
+                </Card>
               </motion.div>
             </div>
           </div>
         </div>
-      </div>
+      </AmbientBackground>
     </AppShell>
   )
 }

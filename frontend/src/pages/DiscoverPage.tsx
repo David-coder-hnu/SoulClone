@@ -1,274 +1,214 @@
 import { useState } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { X, Heart, Info, MapPin, Sparkles } from 'lucide-react'
+import { motion, useMotionValue, useTransform, animate } from 'framer-motion'
+import {
+  MapPin, Heart, X, Star,
+} from 'lucide-react'
 import AppShell from '@/components/layout/AppShell'
-import { generateGradient } from '@/lib/utils'
-import { Badge } from '@/components/ui/Badge'
+import { Card } from '@/components/ui/Card'
+import { useDiscoverProfiles } from '@/hooks/useDiscoverProfiles'
+import { FadeIn } from '@/components/shared/Motion'
+import { DiscoverEmptyState, ErrorState, SkeletonCard } from '@/components/shared/DataStates'
+import AmbientBackground from '@/components/shared/AmbientBackground'
 
-const mockProfiles = [
-  {
-    id: '1',
-    nickname: '小雨',
-    age: 24,
-    city: '上海',
-    bio: '喜欢咖啡、摄影和深夜的电影。',
-    tags: ['摄影', '咖啡', '电影', '猫奴'],
-    traits: { openness: 85, conscientiousness: 70, extraversion: 60, agreeableness: 90, neuroticism: 40 },
-    distance: '3km',
-  },
-  {
-    id: '2',
-    nickname: '阿杰',
-    age: 27,
-    city: '上海',
-    bio: '程序员，周末户外爱好者。',
-    tags: ['编程', '徒步', '游戏', '音乐'],
-    traits: { openness: 75, conscientiousness: 85, extraversion: 50, agreeableness: 80, neuroticism: 30 },
-    distance: '8km',
-  },
-  {
-    id: '3',
-    nickname: '林夕',
-    age: 25,
-    city: '上海',
-    bio: '画画、写手帐、收集 vintage。',
-    tags: ['艺术', '手帐', '复古', '阅读'],
-    traits: { openness: 95, conscientiousness: 60, extraversion: 45, agreeableness: 85, neuroticism: 55 },
-    distance: '5km',
-  },
-]
-
-const traitLabels: Record<string, string> = {
-  openness: '开放性',
-  conscientiousness: '尽责性',
-  extraversion: '外向性',
-  agreeableness: '宜人性',
-  neuroticism: '情绪稳定',
-}
+const SWIPE_THRESHOLD = 120
 
 export default function DiscoverPage() {
-  const [profiles] = useState(mockProfiles)
+  const { data: profiles, isLoading, error } = useDiscoverProfiles()
   const [currentIndex, setCurrentIndex] = useState(0)
-  const [direction, setDirection] = useState(0)
-  const [showDetail, setShowDetail] = useState(false)
-  const [exitX, setExitX] = useState(0)
+  const [direction, setDirection] = useState<'left' | 'right' | null>(null)
 
-  const current = profiles[currentIndex]
+  const x = useMotionValue(0)
+  const rotate = useTransform(x, [-300, 300], [-15, 15])
+  const opacity = useTransform(x, [-300, -100, 0, 100, 300], [0.3, 1, 1, 1, 0.3])
 
-  const handleSwipe = (dir: 'left' | 'right') => {
-    setDirection(dir === 'right' ? 1 : -1)
-    setExitX(dir === 'right' ? 500 : -500)
-    setTimeout(() => {
-      setCurrentIndex((p) => p + 1)
-      setDirection(0)
-      setExitX(0)
-    }, 300)
+  const handleDragEnd = (_: any, info: any) => {
+    if (info.offset.x > SWIPE_THRESHOLD) {
+      setDirection('right')
+      animate(x, 400, { duration: 0.3 }).then(() => nextCard())
+    } else if (info.offset.x < -SWIPE_THRESHOLD) {
+      setDirection('left')
+      animate(x, -400, { duration: 0.3 }).then(() => nextCard())
+    } else {
+      animate(x, 0, { type: 'spring', stiffness: 300, damping: 25 })
+    }
   }
 
-  if (!current) {
+  const nextCard = () => {
+    setCurrentIndex((prev) => prev + 1)
+    x.set(0)
+    setDirection(null)
+  }
+
+  const currentProfile = profiles ? profiles[currentIndex] : null
+  const remaining = profiles ? profiles.length - currentIndex : 0
+
+  if (error) {
     return (
       <AppShell>
-        <div className="flex flex-col items-center justify-center h-[80vh]">
-          <motion.div
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ type: 'spring', stiffness: 200 }}
-          >
-            <Sparkles size={48} className="text-accent-cyan mb-4" />
-          </motion.div>
-          <h2 className="font-sans text-2xl font-bold">今日推荐已看完</h2>
-          <p className="text-text-secondary mt-2">明天再来发现新的灵魂吧</p>
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => setCurrentIndex(0)}
-            className="mt-6 px-6 py-3 rounded-full bg-gradient-to-r from-accent-cyan to-accent-magenta text-white font-medium glow-cyan-md hover:glow-cyan-lg transition-all duration-150 ease-spring"
-          >
-            重新开始
-          </motion.button>
-        </div>
+        <AmbientBackground variant="discover">
+          <div className="p-4 md:p-8 max-w-md mx-auto">
+            <ErrorState message="加载推荐失败" onRetry={() => window.location.reload()} />
+          </div>
+        </AmbientBackground>
       </AppShell>
     )
   }
 
   return (
     <AppShell>
-      <div className="p-4 md:p-8 max-w-lg mx-auto h-[calc(100vh-80px)] md:h-auto flex flex-col relative">
-        {/* Background ambient */}
-        <div className="fixed inset-0 mesh-gradient pointer-events-none" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] h-[300px] bg-accent-cyan/3 rounded-full blur-[100px] pointer-events-none animate-breathe" />
+      <AmbientBackground variant="discover">
+        <div className="p-4 md:p-8 max-w-md mx-auto">
+          {/* Header */}
+          <FadeIn>
+            <div className="flex items-center justify-between mb-6">
+              <h1 className="font-sans text-2xl font-bold">发现</h1>
+              <span className="text-xs text-text-tertiary">剩余 {remaining} 位</span>
+            </div>
+          </FadeIn>
 
-        <div className="flex items-center justify-between mb-6 relative z-10">
-          <h1 className="font-sans text-2xl font-bold">发现</h1>
-          <div className="flex items-center gap-2 text-text-secondary text-sm bg-bg-600 border border-white/[0.08] px-3 py-1.5 rounded-full">
-            <MapPin size={14} />
-            <span>上海</span>
-          </div>
-        </div>
-
-        {/* Card Stack */}
-        <div className="flex-1 relative z-10">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={current.id}
-              initial={{ opacity: 0, scale: 0.9, y: 20 }}
-              animate={{
-                opacity: 1,
-                scale: 1,
-                y: 0,
-                x: exitX,
-                rotate: direction === 1 ? 15 : direction === -1 ? -15 : 0,
-              }}
-              exit={{ opacity: 0, scale: 0.8, transition: { duration: 0.2 } }}
-              transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-              drag="x"
-              dragConstraints={{ left: 0, right: 0 }}
-              dragElastic={0.7}
-              onDragEnd={(_, info) => {
-                if (info.offset.x > 150) handleSwipe('right')
-                else if (info.offset.x < -150) handleSwipe('left')
-              }}
-              className="absolute inset-0 cursor-grab active:cursor-grabbing"
-            >
-              <div className="h-full glass-elevated rounded-3xl overflow-hidden flex flex-col relative">
-                {/* Avatar area */}
-                <div
-                  className="h-64 md:h-80 relative flex items-end p-6"
-                  style={{ background: generateGradient(current.id) }}
+          {isLoading ? (
+            <SkeletonCard />
+          ) : !currentProfile ? (
+            <DiscoverEmptyState />
+          ) : (
+            <FadeIn>
+              <div className="relative h-[520px]">
+                {/* Swipe Card */}
+                <motion.div
+                  style={{ x, rotate, opacity }}
+                  drag="x"
+                  dragConstraints={{ left: 0, right: 0 }}
+                  onDragEnd={handleDragEnd}
+                  className="absolute inset-0 cursor-grab active:cursor-grabbing"
                 >
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-                  <div className="relative z-10">
-                    <motion.h2
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.1 }}
-                      className="font-sans text-3xl font-bold text-white"
-                    >
-                      {current.nickname}
-                    </motion.h2>
-                    <motion.p
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      transition={{ delay: 0.2 }}
-                      className="text-white/80 text-sm mt-1"
-                    >
-                      {current.age}岁 · {current.city} · {current.distance}
-                    </motion.p>
-                  </div>
+                  <Card variant="elevated" className="h-full flex flex-col overflow-hidden">
+                    {/* Avatar */}
+                    <div className="relative h-64 shrink-0">
+                      {currentProfile.avatar ? (
+                        <img
+                          src={currentProfile.avatar}
+                          alt={currentProfile.nickname}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-gradient-to-br from-accent-cyan/20 to-accent-magenta/20 flex items-center justify-center">
+                          <Star size={48} className="text-text-tertiary" />
+                        </div>
+                      )}
+                      <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent" />
+                      <div className="absolute bottom-4 left-4 right-4">
+                        <h2 className="font-sans text-xl font-bold text-white">
+                          {currentProfile.nickname}
+                          <span className="ml-2 text-sm font-normal text-text-secondary">
+                            {currentProfile.age > 0 ? `${currentProfile.age}岁` : ''}
+                          </span>
+                        </h2>
+                        <div className="flex items-center gap-1 text-text-secondary text-xs mt-1">
+                          <MapPin size={12} />
+                          {currentProfile.city || '未知位置'}
+                          {currentProfile.distance && ` · ${currentProfile.distance}`}
+                        </div>
+                      </div>
+                    </div>
 
-                  {/* Mystery indicator */}
-                  <motion.div
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.3 }}
-                    className="absolute top-4 right-4"
-                  >
-                    <Badge variant="default" size="sm">身份未知</Badge>
-                  </motion.div>
+                    {/* Bio */}
+                    <div className="flex-1 p-5 overflow-y-auto">
+                      <p className="text-sm text-text-secondary leading-relaxed mb-4">
+                        {currentProfile.bio || '暂无简介'}
+                      </p>
 
-                  {/* Swipe hint */}
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.5 }}
-                    className="absolute top-4 left-4"
-                  >
-                    <Badge variant="cyan" size="sm">左右滑动</Badge>
-                  </motion.div>
-                </div>
+                      {/* Tags */}
+                      {currentProfile.tags && currentProfile.tags.length > 0 && (
+                        <div className="flex flex-wrap gap-2 mb-4">
+                          {currentProfile.tags.map((tag) => (
+                            <span
+                              key={tag}
+                              className="px-2.5 py-1 rounded-full bg-bg-600 border border-white/[0.08] text-xs text-text-secondary"
+                            >
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
+                      )}
 
-                {/* Info */}
-                <div className="flex-1 p-6 overflow-y-auto">
-                  <motion.p
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.2 }}
-                    className="text-text-secondary leading-relaxed mb-4"
-                  >
-                    {current.bio}
-                  </motion.p>
-
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.3 }}
-                    className="flex flex-wrap gap-2 mb-6"
-                  >
-                    {current.tags.map((tag) => (
-                      <Badge key={tag} variant="cyan" size="sm">
-                        {tag}
-                      </Badge>
-                    ))}
-                  </motion.div>
-
-                  <AnimatePresence>
-                    {showDetail && (
-                      <motion.div
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: 'auto' }}
-                        exit={{ opacity: 0, height: 0 }}
-                        className="space-y-3"
-                      >
-                        <p className="text-sm font-medium">人格雷达</p>
-                        {Object.entries(current.traits).map(([key, value], i) => (
-                          <motion.div
-                            key={key}
-                            initial={{ opacity: 0, x: -10 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{ delay: i * 0.05 }}
-                            className="flex items-center gap-3"
-                          >
-                            <span className="text-xs text-text-secondary w-16">{traitLabels[key] || key}</span>
-                            <div className="flex-1 h-1.5 bg-bg-600 rounded-full overflow-hidden">
-                              <motion.div
-                                initial={{ width: 0 }}
-                                animate={{ width: `${value}%` }}
-                                transition={{ delay: i * 0.05 + 0.2, type: 'spring' }}
-                                className="h-full bg-gradient-to-r from-accent-cyan to-accent-magenta"
-                              />
+                      {/* Traits */}
+                      {currentProfile.traits && Object.keys(currentProfile.traits).length > 0 && (
+                        <div className="space-y-2">
+                          {Object.entries(currentProfile.traits).slice(0, 3).map(([key, value]) => (
+                            <div key={key} className="flex items-center gap-3">
+                              <span className="text-xs text-text-tertiary w-12 shrink-0">{key}</span>
+                              <div className="flex-1 h-1.5 bg-bg-600 rounded-full overflow-hidden">
+                                <motion.div
+                                  initial={{ width: 0 }}
+                                  animate={{ width: `${(value as number) * 100}%` }}
+                                  transition={{ duration: 0.8, ease: 'easeOut' }}
+                                  className="h-full bg-gradient-to-r from-accent-cyan to-accent-magenta rounded-full"
+                                />
+                              </div>
                             </div>
-                            <span className="text-xs text-text-secondary font-mono w-8">{value}</span>
-                          </motion.div>
-                        ))}
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </Card>
+                </motion.div>
+
+                {/* Particle trail — One More Thing */}
+                {direction && (
+                  <div className="absolute inset-0 pointer-events-none overflow-hidden">
+                    {Array.from({ length: 8 }).map((_, i) => (
+                      <motion.div
+                        key={i}
+                        initial={{
+                          x: direction === 'right' ? '20%' : '80%',
+                          y: `${20 + i * 8}%`,
+                          opacity: 0.8,
+                          scale: 1,
+                        }}
+                        animate={{
+                          x: direction === 'right' ? '120%' : '-20%',
+                          opacity: 0,
+                          scale: 0.5,
+                        }}
+                        transition={{ duration: 0.6, delay: i * 0.03 }}
+                        className={`absolute w-1.5 h-1.5 rounded-full ${
+                          direction === 'right' ? 'bg-accent-magenta' : 'bg-text-tertiary'
+                        }`}
+                      />
+                    ))}
+                  </div>
+                )}
               </div>
-            </motion.div>
-          </AnimatePresence>
+
+              {/* Action Buttons */}
+              <div className="flex items-center justify-center gap-6 mt-6">
+                <motion.button
+                  whileHover={{ scale: 1.08 }}
+                  whileTap={{ scale: 0.92 }}
+                  onClick={() => {
+                    setDirection('left')
+                    animate(x, -400, { duration: 0.3 }).then(() => nextCard())
+                  }}
+                  className="w-14 h-14 rounded-full bg-bg-600 border border-white/[0.08] flex items-center justify-center text-text-secondary hover:text-accent-magenta hover:border-accent-magenta/30 transition-colors"
+                >
+                  <X size={24} />
+                </motion.button>
+                <motion.button
+                  whileHover={{ scale: 1.08 }}
+                  whileTap={{ scale: 0.92 }}
+                  onClick={() => {
+                    setDirection('right')
+                    animate(x, 400, { duration: 0.3 }).then(() => nextCard())
+                  }}
+                  className="w-14 h-14 rounded-full bg-accent-magenta/10 border border-accent-magenta/30 flex items-center justify-center text-accent-magenta hover:bg-accent-magenta/20 transition-colors"
+                >
+                  <Heart size={24} />
+                </motion.button>
+              </div>
+            </FadeIn>
+          )}
         </div>
-
-        {/* Actions */}
-        <div className="flex items-center justify-center gap-6 py-6 relative z-10">
-          <motion.button
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.9 }}
-            onClick={() => handleSwipe('left')}
-            className="w-16 h-16 rounded-full bg-bg-600 border border-white/[0.08] flex items-center justify-center text-text-secondary hover:text-accent-magenta hover:border-accent-magenta/30 hover:shadow-[0_0_16px_rgba(255,0,110,0.3)] transition-all duration-150 ease-spring"
-          >
-            <X size={28} />
-          </motion.button>
-
-          <motion.button
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.9 }}
-            onClick={() => setShowDetail(!showDetail)}
-            className="w-12 h-12 rounded-full bg-bg-600 border border-white/[0.08] flex items-center justify-center text-text-secondary hover:text-accent-gold hover:border-accent-gold/30 hover:shadow-[0_0_16px_rgba(255,190,11,0.3)] transition-all duration-150 ease-spring"
-          >
-            <Info size={20} />
-          </motion.button>
-
-          <motion.button
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.9 }}
-            onClick={() => handleSwipe('right')}
-            className="w-16 h-16 rounded-full bg-bg-600 border border-accent-cyan/30 flex items-center justify-center text-accent-cyan hover:bg-accent-cyan/10 hover:shadow-[0_0_16px_rgba(0,240,255,0.3)] transition-all duration-150 ease-spring"
-          >
-            <Heart size={28} />
-          </motion.button>
-        </div>
-      </div>
+      </AmbientBackground>
     </AppShell>
   )
 }

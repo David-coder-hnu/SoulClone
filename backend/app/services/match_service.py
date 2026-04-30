@@ -20,9 +20,24 @@ class MatchService:
 
         items = []
         for u in users[:limit]:
+            # Compute age from birth_date if available
+            age = 0
+            if u.birth_date:
+                from datetime import date
+                today = date.today()
+                born = u.birth_date.date() if hasattr(u.birth_date, "date") else u.birth_date
+                age = today.year - born.year - ((today.month, today.day) < (born.month, born.day))
+
             items.append({
-                "user_id": str(u.id),
-                "nickname": u.nickname,
+                "id": str(u.id),
+                "nickname": u.nickname or "用户",
+                "age": age,
+                "city": u.location_city or "",
+                "bio": u.bio or "",
+                "tags": [],
+                "traits": {},
+                "distance": "附近",
+                "avatar": u.avatar_url,
                 "compatibility_score": round(random.uniform(60, 98), 1),
                 "match_reason": "兴趣相似，地理位置接近",
             })

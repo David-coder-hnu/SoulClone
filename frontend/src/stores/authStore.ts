@@ -8,6 +8,10 @@ interface User {
   avatar_url: string | null
   bio: string | null
   status: string
+  is_online?: boolean
+  location_city?: string | null
+  gender?: string | null
+  big_five?: Record<string, number> | null
 }
 
 interface AuthState {

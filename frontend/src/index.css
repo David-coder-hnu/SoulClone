@@ -334,6 +334,35 @@
   }
 }
 
+/* ───────── Conic Gradient Border Animation (for ClonePage status toggle) ───────── */
+@keyframes conic-spin {
+  0% { --angle: 0deg; }
+  100% { --angle: 360deg; }
+}
+
+@property --angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+
+.conic-glow {
+  position: relative;
+  border-radius: 16px;
+}
+
+.conic-glow::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: inherit;
+  background: conic-gradient(from var(--angle), #00f0ff, #ff006e, #ffbe0b, #00f0ff);
+  animation: conic-spin 3s linear infinite;
+  z-index: -1;
+  opacity: 0.5;
+  filter: blur(8px);
+}
+
 /* ───────── High Contrast Focus (§11.2) ───────── */
 @media (prefers-contrast: high) {
   .focus-ring:focus-visible {

@@ -1,11 +1,12 @@
 from datetime import datetime, timezone
 
-from sqlalchemy import select, or_
+from sqlalchemy import select, or_, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.conversation import Conversation
 from app.models.message import Message
 from app.models.takeover import Takeover
+from app.models.user import User
 
 
 class ChatService:
@@ -21,7 +22,59 @@ class ChatService:
                 )
             ).order_by(Conversation.last_message_at.desc())
         )
-        return result.scalars().all()
+        conversations = result.scalars().all()
+
+        enriched = []
+        for conv in conversations:
+            partner_id = (
+                str(conv.participant_b_id)
+                if str(conv.participant_a_id) == user_id
+                else str(conv.participant_a_id)
+            )
+
+            # Fetch partner info
+            partner_result = await self.db.execute(
+                select(User).where(User.id == partner_id)
+            )
+            partner = partner_result.scalar_one_or_none()
+
+            # Fetch last message preview
+            last_msg_result = await self.db.execute(
+                select(Message)
+                .where(Message.conversation_id == conv.id)
+                .order_by(Message.created_at.desc())
+                .limit(1)
+            )
+            last_msg = last_msg_result.scalar_one_or_none()
+
+            # Count unread messages (sent by partner, not read)
+            unread_result = await self.db.execute(
+                select(func.count(Message.id)).where(
+                    Message.conversation_id == conv.id,
+                    Message.sender_id == partner_id,
+                    Message.is_read == False,
+                )
+            )
+            unread_count = unread_result.scalar() or 0
+
+            enriched.append({
+                "id": conv.id,
+                "match_id": conv.match_id,
+                "participant_a_id": conv.participant_a_id,
+                "participant_b_id": conv.participant_b_id,
+                "status": conv.status,
+                "intimacy_score": conv.intimacy_score,
+                "relationship_stage": conv.relationship_stage,
+                "last_message_at": conv.last_message_at,
+                "created_at": conv.created_at,
+                "partner_nickname": partner.nickname if partner else None,
+                "partner_avatar": partner.avatar_url if partner else None,
+                "partner_is_online": partner.is_online if partner else False,
+                "last_message_preview": last_msg.content[:60] if last_msg else None,
+                "unread_count": unread_count,
+            })
+
+        return enriched
 
     async def get_conversation(self, conversation_id: str):
         result = await self.db.execute(

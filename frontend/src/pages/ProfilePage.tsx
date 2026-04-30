@@ -1,186 +1,241 @@
-import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { MapPin, Calendar, Edit, LogOut, Settings, Sparkles, Heart, MessageCircle, Users, Shield, Camera } from 'lucide-react'
+import {
+  Settings, Edit3, LogOut, ChevronRight,
+  MessageCircle, Heart, FileText,
+} from 'lucide-react'
 import AppShell from '@/components/layout/AppShell'
+import { Card } from '@/components/ui/Card'
 import { useAuthStore } from '@/stores/authStore'
-import { Avatar } from '@/components/ui/Avatar'
-import { Button } from '@/components/ui/Button'
+import { useUserProfile } from '@/hooks/useUserProfile'
+import { FadeIn, StaggerContainer, StaggerItem, CountUp } from '@/components/shared/Motion'
+import { ErrorState } from '@/components/shared/DataStates'
+import AmbientBackground from '@/components/shared/AmbientBackground'
+
+// Simple Big Five radar chart — One More Thing
+function BigFiveRadar({ traits }: { traits: Record<string, number> }) {
+  const keys = Object.keys(traits)
+  if (keys.length === 0) return null
+
+  const size = 180
+  const center = size / 2
+  const radius = 70
+  const angleStep = (Math.PI * 2) / keys.length
+
+  const points = keys.map((key, i) => {
+    const angle = i * angleStep - Math.PI / 2
+    const r = radius * (traits[key] || 0.5)
+    return [center + r * Math.cos(angle), center + r * Math.sin(angle)]
+  })
+
+  const polyPoints = points.map((p) => p.join(',')).join(' ')
+
+  return (
+    <div className="flex flex-col items-center">
+      <svg width={size} height={size} className="overflow-visible">
+        {/* Grid circles */}
+        {[0.25, 0.5, 0.75, 1].map((s) => (
+          <circle
+            key={s}
+            cx={center}
+            cy={center}
+            r={radius * s}
+            fill="none"
+            stroke="rgba(255,255,255,0.06)"
+            strokeWidth={1}
+          />
+        ))}
+        {/* Axes */}
+        {keys.map((_, i) => {
+          const angle = i * angleStep - Math.PI / 2
+          const x2 = center + radius * Math.cos(angle)
+          const y2 = center + radius * Math.sin(angle)
+          return (
+            <line
+              key={i}
+              x1={center}
+              y1={center}
+              x2={x2}
+              y2={y2}
+              stroke="rgba(255,255,255,0.06)"
+              strokeWidth={1}
+            />
+          )
+        })}
+        {/* Data polygon */}
+        <motion.polygon
+          points={polyPoints}
+          fill="rgba(0,240,255,0.15)"
+          stroke="rgba(0,240,255,0.5)"
+          strokeWidth={2}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 1 }}
+        />
+        {/* Labels */}
+        {keys.map((key, i) => {
+          const angle = i * angleStep - Math.PI / 2
+          const x = center + (radius + 18) * Math.cos(angle)
+          const y = center + (radius + 18) * Math.sin(angle)
+          return (
+            <text
+              key={key}
+              x={x}
+              y={y}
+              textAnchor="middle"
+              dominantBaseline="middle"
+              className="fill-text-tertiary text-[9px]"
+            >
+              {key.slice(0, 2)}
+            </text>
+          )
+        })}
+      </svg>
+      <p className="text-xs text-text-tertiary mt-2">人格雷达</p>
+    </div>
+  )
+}
 
 export default function ProfilePage() {
-  const { user, logout } = useAuthStore()
-  const [hoverStat, setHoverStat] = useState<string | null>(null)
+  const { user: authUser, logout } = useAuthStore()
+  const { data: profile, error } = useUserProfile()
 
-  const stats = [
-    { icon: Users, label: '匹配', value: '12', color: 'text-accent-cyan' as const },
-    { icon: MessageCircle, label: '对话', value: '48', color: 'text-accent-magenta' as const },
-    { icon: Heart, label: '获赞', value: '156', color: 'text-accent-gold' as const },
-    { icon: Sparkles, label: '动态', value: '23', color: 'text-accent-cyan' as const },
+  const handleLogout = () => {
+    logout()
+    window.location.href = '/login'
+  }
+
+  if (error) {
+    return (
+      <AppShell>
+        <AmbientBackground variant="profile">
+          <div className="p-4 md:p-8 max-w-2xl mx-auto">
+            <ErrorState message="加载资料失败" onRetry={() => window.location.reload()} />
+          </div>
+        </AmbientBackground>
+      </AppShell>
+    )
+  }
+
+  const user = profile || authUser
+
+  // Mock Big Five for demo — in production this comes from clone profile
+  const bigFive = profile?.big_five || {
+    开放性: 0.72,
+    尽责性: 0.65,
+    外向性: 0.58,
+    宜人性: 0.80,
+    神经质: 0.45,
+  }
+
+  const menuItems = [
+    { icon: Edit3, label: '编辑资料', to: '/profile/edit' },
+    { icon: MessageCircle, label: '我的对话', to: '/chat' },
+    { icon: Heart, label: '我的匹配', to: '/matches' },
+    { icon: FileText, label: '我的动态', to: '/feed/me' },
+    { icon: Settings, label: '设置', to: '/settings' },
   ]
 
   return (
     <AppShell>
-      <div className="p-4 md:p-8 max-w-5xl mx-auto relative">
-        <div className="fixed inset-0 mesh-gradient pointer-events-none" />
-        <div className="fixed top-1/4 left-1/2 -translate-x-1/2 w-[400px] h-[400px] bg-accent-cyan/2 rounded-full blur-[150px] pointer-events-none animate-breathe" />
-
-        <div className="relative z-10">
-          {/* Profile Header — Full width hero */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="bg-bg-500 border border-white/[0.06] rounded-2xl p-6 md:p-10 mb-6 relative overflow-hidden"
-          >
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-72 h-72 bg-accent-cyan/3 rounded-full blur-[100px] pointer-events-none" />
-
-            <div className="relative z-10 flex flex-col md:flex-row items-center md:items-start gap-6">
-              <motion.div
-                whileHover={{ scale: 1.05 }}
-                transition={{ type: 'spring', stiffness: 300 }}
-                className="relative w-24 h-24 shrink-0"
-              >
-                <Avatar size="xl" ring="gradient" fallback={user?.nickname?.[0] || '?'} />
-                <motion.div
-                  whileHover={{ scale: 1.1 }}
-                  className="absolute -bottom-1 -right-1 w-8 h-8 rounded-xl bg-bg-600 border border-white/[0.10] flex items-center justify-center cursor-pointer hover:border-accent-cyan/30 transition-colors duration-150"
-                >
-                  <Camera size={14} className="text-text-secondary" />
-                </motion.div>
-              </motion.div>
-
-              <div className="flex-1 text-center md:text-left">
-                <h1 className="font-sans text-2xl font-bold">{user?.nickname || '用户'}</h1>
-                <p className="text-text-secondary mt-1">{user?.bio || '还没有简介'}</p>
-
-                <div className="flex items-center justify-center md:justify-start gap-5 mt-4 text-text-secondary text-sm">
-                  <span className="flex items-center gap-1.5">
-                    <MapPin size={14} className="text-text-tertiary" />
-                    上海
-                  </span>
-                  <span className="flex items-center gap-1.5">
-                    <Calendar size={14} className="text-text-tertiary" />
-                    加入于 2024
-                  </span>
+      <AmbientBackground variant="profile">
+        <div className="p-4 md:p-8 max-w-2xl mx-auto">
+          {/* Profile Header */}
+          <FadeIn>
+            <Card variant="elevated" className="mb-6">
+              <div className="flex flex-col md:flex-row items-center gap-6">
+                {/* Avatar */}
+                <div className="relative">
+                  {user?.avatar_url ? (
+                    <img
+                      src={user.avatar_url}
+                      alt={user.nickname || '用户'}
+                      className="w-24 h-24 rounded-full object-cover border-2 border-white/10"
+                    />
+                  ) : (
+                    <div className="w-24 h-24 rounded-full bg-gradient-to-br from-accent-cyan/30 to-accent-magenta/30 border-2 border-white/10 flex items-center justify-center">
+                      <span className="text-2xl font-bold text-white">
+                        {(user?.nickname || '用')[0]}
+                      </span>
+                    </div>
+                  )}
+                  {user?.is_online && (
+                    <div className="absolute bottom-1 right-1 w-4 h-4 rounded-full bg-accent-cyan border-2 border-background" />
+                  )}
                 </div>
 
-                <div className="flex items-center justify-center md:justify-start gap-3 mt-5">
-                  <Button variant="ghost" size="sm" className="flex items-center gap-2">
-                    <Edit size={16} />
-                    编辑资料
-                  </Button>
-                  <Button variant="ghost" size="sm" className="flex items-center gap-2">
-                    <Settings size={16} />
-                    设置
-                  </Button>
-                </div>
-              </div>
-
-              {/* Stats inline on desktop */}
-              <div className="hidden lg:grid grid-cols-2 gap-3 shrink-0">
-                {stats.slice(0, 4).map((stat) => (
-                  <div key={stat.label} className="text-center px-4 py-2">
-                    <p className="font-mono text-xl font-bold text-accent-cyan">{stat.value}</p>
-                    <p className="text-text-tertiary text-xs">{stat.label}</p>
+                {/* Info */}
+                <div className="flex-1 text-center md:text-left">
+                  <h1 className="font-sans text-xl font-bold">
+                    {user?.nickname || '未设置昵称'}
+                  </h1>
+                  <p className="text-sm text-text-secondary mt-1">
+                    {user?.bio || '暂无个性签名'}
+                  </p>
+                  <div className="flex items-center justify-center md:justify-start gap-4 mt-3 text-xs text-text-tertiary">
+                    <span>{user?.location_city || '未知城市'}</span>
+                    <span>{user?.gender === 'male' ? '男' : user?.gender === 'female' ? '女' : '未知性别'}</span>
                   </div>
-                ))}
-              </div>
-            </div>
-          </motion.div>
+                </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Left — Stats (mobile visible, desktop hidden since in header) */}
-            <div className="lg:hidden">
-              <div className="grid grid-cols-2 gap-4 mb-6">
-                {stats.map((stat, i) => (
-                  <motion.div
-                    key={stat.label}
-                    initial={{ opacity: 0, y: 10, scale: 0.9 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    transition={{ delay: i * 0.08, type: 'spring', stiffness: 200 }}
-                    whileHover={{ y: -4, scale: 1.03 }}
-                    onHoverStart={() => setHoverStat(stat.label)}
-                    onHoverEnd={() => setHoverStat(null)}
-                    className="bg-bg-500 border border-white/[0.06] rounded-2xl p-4 text-center transition-all duration-250 ease-liquid cursor-default hover:bg-bg-600"
-                  >
-                    <motion.div
-                      animate={hoverStat === stat.label ? { rotate: [0, -10, 10, 0] } : {}}
-                      transition={{ duration: 0.5 }}
-                    >
-                      <stat.icon size={18} className={`mx-auto mb-2 ${stat.color}`} />
-                    </motion.div>
-                    <motion.p
-                      key={stat.value}
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      transition={{ type: 'spring', stiffness: 300, delay: i * 0.08 + 0.2 }}
-                      className="font-mono text-2xl font-bold text-accent-cyan"
-                    >
-                      {stat.value}
-                    </motion.p>
-                    <p className="text-text-tertiary text-xs mt-1">{stat.label}</p>
-                  </motion.div>
-                ))}
+                {/* Big Five Radar — One More Thing */}
+                <BigFiveRadar traits={bigFive} />
               </div>
-            </div>
+            </Card>
+          </FadeIn>
 
-            {/* Right — Settings & Privacy (2 cols on desktop) */}
-            <div className="lg:col-span-3">
-              {/* Safety & Privacy */}
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.15 }}
-                className="bg-bg-500 border border-white/[0.06] rounded-2xl p-5 mb-6"
-              >
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-xl bg-accent-cyan/10 flex items-center justify-center">
-                <Shield size={18} className="text-accent-cyan" />
-              </div>
-              <div>
-                <h3 className="font-medium">隐私与安全</h3>
-                <p className="text-text-secondary text-sm">你的数据完全加密存储</p>
-              </div>
-            </div>
-            <div className="space-y-2">
-              {['端到端加密聊天', '身份隐私保护', '随时删除所有数据'].map((item, i) => (
-                <motion.div
-                  key={item}
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.2 + i * 0.05 }}
-                  whileHover={{ x: 4 }}
-                  className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-bg-500/50 hover:bg-bg-500/80 transition-colors duration-150 cursor-default group"
-                >
-                  <motion.div
-                    animate={{ scale: [1, 1.2, 1] }}
-                    transition={{ duration: 2, repeat: Infinity, delay: i * 0.3 }}
-                    className="w-2 h-2 rounded-full bg-accent-cyan"
-                  />
-                  <span className="text-sm text-text-secondary group-hover:text-text-primary transition-colors duration-150">{item}</span>
-                </motion.div>
+          {/* Stats */}
+          <FadeIn delay={0.05}>
+            <div className="grid grid-cols-3 gap-3 mb-6">
+              {[
+                { label: '对话', value: 0 },
+                { label: '匹配', value: 0 },
+                { label: '动态', value: 0 },
+              ].map((stat) => (
+                <Card key={stat.label} variant="flat" className="text-center py-4">
+                  <p className="font-mono text-xl font-bold text-text-primary">
+                    <CountUp target={stat.value} />
+                  </p>
+                  <p className="text-xs text-text-secondary mt-1">{stat.label}</p>
+                </Card>
               ))}
             </div>
-          </motion.div>
+          </FadeIn>
 
-          {/* Danger zone */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.3 }}
-          >
-            <Button
-              variant="danger"
-              size="md"
-              onClick={logout}
-              className="w-full flex items-center justify-center gap-2"
+          {/* Menu */}
+          <FadeIn delay={0.1}>
+            <Card variant="flat" className="mb-6">
+              <StaggerContainer className="divide-y divide-white/[0.04]">
+                {menuItems.map((item) => (
+                  <StaggerItem key={item.label}>
+                    <Link
+                      to={item.to}
+                      className="flex items-center gap-3 py-3.5 px-1 hover:text-accent-cyan transition-colors group"
+                    >
+                      <item.icon size={18} className="text-text-tertiary group-hover:text-accent-cyan transition-colors" />
+                      <span className="text-sm flex-1">{item.label}</span>
+                      <ChevronRight size={16} className="text-text-ghost" />
+                    </Link>
+                  </StaggerItem>
+                ))}
+              </StaggerContainer>
+            </Card>
+          </FadeIn>
+
+          {/* Logout */}
+          <FadeIn delay={0.15}>
+            <motion.button
+              whileHover={{ scale: 1.01 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={handleLogout}
+              className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl bg-bg-600 border border-white/[0.08] text-text-secondary text-sm hover:text-accent-magenta hover:border-accent-magenta/20 transition-colors"
             >
-              <LogOut size={18} />
+              <LogOut size={16} />
               退出登录
-            </Button>
-          </motion.div>
-            </div>
-          </div>
+            </motion.button>
+          </FadeIn>
         </div>
-      </div>
+      </AmbientBackground>
     </AppShell>
   )
 }
