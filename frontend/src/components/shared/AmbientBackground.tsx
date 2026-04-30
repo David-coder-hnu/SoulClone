@@ -1,8 +1,10 @@
 import { ReactNode } from 'react'
+import { motion } from 'framer-motion'
 
 interface AmbientBackgroundProps {
   variant?: 'home' | 'discover' | 'chat' | 'feed' | 'profile' | 'clone' | 'calibration' | 'auth'
   intensity?: 'subtle' | 'normal' | 'rich'
+  particles?: boolean
   children: ReactNode
   className?: string
 }
@@ -24,9 +26,51 @@ const intensityMap = {
   rich: { w: 500, h: 500, blur: 180 },
 }
 
+// Light-weight floating particles — no three.js, pure Framer Motion
+function FloatingParticles({ color }: { color: string }) {
+  const particles = Array.from({ length: 12 }).map((_, i) => ({
+    id: i,
+    x: Math.random() * 100,
+    y: Math.random() * 100,
+    size: 1 + Math.random() * 2,
+    duration: 10 + Math.random() * 20,
+    delay: Math.random() * 5,
+  }))
+
+  return (
+    <div className="fixed inset-0 pointer-events-none z-[1] overflow-hidden">
+      {particles.map((p) => (
+        <motion.div
+          key={p.id}
+          className="absolute rounded-full"
+          style={{
+            left: `${p.x}%`,
+            top: `${p.y}%`,
+            width: p.size,
+            height: p.size,
+            backgroundColor: color,
+          }}
+          animate={{
+            y: [0, -30, 20, 0],
+            x: [0, 15, -10, 0],
+            opacity: [0.15, 0.4, 0.2, 0.15],
+          }}
+          transition={{
+            duration: p.duration,
+            delay: p.delay,
+            repeat: Infinity,
+            ease: 'easeInOut',
+          }}
+        />
+      ))}
+    </div>
+  )
+}
+
 export default function AmbientBackground({
   variant = 'home',
   intensity = 'normal',
+  particles = true,
   children,
   className = '',
 }: AmbientBackgroundProps) {
@@ -38,16 +82,31 @@ export default function AmbientBackground({
       {/* Global mesh-gradient — always present */}
       <div className="fixed inset-0 mesh-gradient pointer-events-none" />
 
-      {/* Single ambient orb — color follows page theme */}
-      <div
-        className="fixed top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full pointer-events-none animate-breathe"
-        style={{
-          width: dim.w,
-          height: dim.h,
-          filter: `blur(${dim.blur}px)`,
-          background: `radial-gradient(circle, ${colors.from}, ${colors.to}, transparent 70%)`,
-        }}
-      />
+      {/* Floating particles — landing-page level atmosphere */}
+      {particles && <FloatingParticles color="rgba(0,240,255,0.25)" />}
+
+      {/* Multiple ambient orbs — richer than single orb */}
+      <div className="fixed inset-0 pointer-events-none z-[1]">
+        <div
+          className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full animate-breathe"
+          style={{
+            width: dim.w,
+            height: dim.h,
+            filter: `blur(${dim.blur}px)`,
+            background: `radial-gradient(circle, ${colors.from}, ${colors.to}, transparent 70%)`,
+          }}
+        />
+        <div
+          className="absolute top-2/3 right-1/4 rounded-full animate-breathe"
+          style={{
+            width: dim.w * 0.6,
+            height: dim.h * 0.6,
+            filter: `blur(${dim.blur * 0.8}px)`,
+            background: `radial-gradient(circle, ${colors.to}, transparent 70%)`,
+            animationDelay: '2s',
+          }}
+        />
+      </div>
 
       {/* Optional noise for auth pages */}
       {variant === 'auth' && <div className="fixed inset-0 noise-overlay pointer-events-none" />}

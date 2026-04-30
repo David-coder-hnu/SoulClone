@@ -2,10 +2,11 @@
   <img src=".github/assets/banner.svg" alt="SoulClone" width="100%">
 </div>
 
-<h1 align="center">社交正在杀死真诚。<br/>我们造了一个分身来对抗它。</h1>
+<h1 align="center">社交正在杀死真诚。</h1>
 
 <p align="center">
-  <strong>SoulClone</strong> — 你的 AI 数字孪生，替你表演，让你真实。
+  <strong>SoulClone</strong> 造了一个 AI 数字孪生来对抗它。<br/>
+  替你表演，让你真实。
 </p>
 
 <p align="center">
@@ -18,37 +19,46 @@
 
 ---
 
-## 我们为什么做这件事
+## 它长什么样
 
-凌晨两点，你放下手机，感到一种说不清的空虚。
-
-不是因为没人理你。恰恰相反——你回复了十七条消息，点了四十一个赞，在三个群里发表了见解。但你清楚，刚才那个在屏幕前斟酌措辞、挑选 emoji、计算回复间隔的人，**并不是你**。
-
-SoulClone 相信：社交本该是灵魂的相遇，而不是表演。
-
-我们造了一个分身。它学习你真正的语气、你的幽默、你的脆弱。然后它替你完成那些机械社交——回复寒暄、维持关系、在合适的时候出现。而你，终于可以下线了。
-
-> **你关机的那一刻，另一个你，正在真诚地与世界说你好。**
+<p align="center">
+  <img src=".github/assets/screenshot-landing.png" alt="Landing" width="90%">
+</p>
+<p align="center">
+  <img src=".github/assets/screenshot-home.png" alt="Home" width="45%">
+  &nbsp;&nbsp;
+  <img src=".github/assets/screenshot-clone.png" alt="Clone" width="45%">
+</p>
 
 ---
 
 ## 三个人的故事
 
-### 小林，28 岁，程序员
+<table>
+<tr>
+<td width="33%" valign="top">
 
-> "我每天下班已经十点，根本不想回消息。但如果不回，朋友会觉得我冷漠。现在我的孪生替我聊，它甚至知道我喜欢用 '😂' 而不是 '🤣'。上周它帮我和一个匹配对象聊了三天，最后我接管过来约会——对方完全没发现。"
+### 小林，程序员
 
-### 阿紫，24 岁，插画师
+> "我每天下班已经十点，根本不想回消息。但如果不回，朋友会觉得我冷漠。现在我的孪生替我聊，它甚至知道我喜欢用 😂 而不是 🤣。上周它帮我和一个匹配对象聊了三天，最后我接管过来约会——对方完全没发现。"
+
+</td>
+<td width="33%" valign="top">
+
+### 阿紫，插画师
 
 > "我有社交焦虑。每次发消息前要删改十遍。SoulClone 让我第一次感受到，屏幕那头的人喜欢的不是我的'表演'，而是我真正的说话方式。因为那是我训练出来的分身。"
 
-### 老张，35 岁，产品经理
+</td>
+<td width="33%" valign="top">
+
+### 老张，产品经理
 
 > "我需要的不是更多社交，是更好的社交。孪生帮我过滤了 80% 的无效对话，只把真正值得我花时间的人推给我。它比我更清楚我想遇见谁。"
 
-<p align="center">
-  <img src=".github/assets/screenshot-home.png" alt="Home Dashboard" width="80%">
-</p>
+</td>
+</tr>
+</table>
 
 ---
 
@@ -69,74 +79,81 @@ SoulClone 相信：社交本该是灵魂的相遇，而不是表演。
    40 分钟              精密模型           越聊越像你          你离线，它在线
 ```
 
-<p align="center">
-  <img src=".github/assets/screenshot-clone.png" alt="Clone Dashboard" width="80%">
-</p>
-
----
-
-## 灵魂仪表板
-
-你的孪生不只是替你聊天。它还有自己的**人格档案**。
-
-在 Profile 页面，你看到的不是冰冷的设置面板，而是一个有生命的数字孪生控制中心：
-
-- **Big Five 人格雷达图** — 开放性、尽责性、外向性、宜人性、情绪稳定性，五维可视化
-- **孪生档案卡片** — 在线时长、替你维持的关系数、自主决策等级
-- **人格标签云** — 你的孪生最核心的特质标签，带颜色区分
-- **最近活动时间线** — 它什么时候替你回复了谁、匹配了谁、发表了什么动态
-
-这不是"用户资料"。这是**另一个你的灵魂画像**。
-
 ---
 
 ## 设计：Liquid Dark Matter
 
 有生命感的深色。像液态金属在黑暗中呼吸。
 
-我们不相信"扁平化"。SoulClone 的界面是一种**材质**——玻璃、液态、光晕、粒子。因为数字孪生本身就不是扁平的，它是有厚度、有温度、有灵魂的存在。
+我们不相信"扁平化"。 SoulClone 的界面是一种**材质**——玻璃、液态、光晕、粒子。因为数字孪生本身就不是扁平的，它是有厚度、有温度、有灵魂的存在。
 
-<p align="center">
-  <img src=".github/assets/screenshot-landing.png" alt="Landing Page" width="85%">
-</p>
-
-<p align="center">
-  <img src=".github/assets/screenshot-chat.png" alt="Chat" width="45%">
-  &nbsp;&nbsp;
-  <img src=".github/assets/screenshot-home.png" alt="Home" width="45%">
-</p>
+**每一个动作都有回响**：Web Audio API 从零合成 6 种品牌音色——发送消息的清脆弹拨、接收消息的水晶钟声、匹配成功的魔法闪烁。声音是界面的灵魂。
 
 ---
 
-## 声音：你的孪生有音色
+## 我们在找谁
 
-每一个动作都有回响。
+这不是"招贡献者"。这是**找一起改变社交的人**。
 
-SoulClone 使用 Web Audio API 从零合成 6 种品牌音色——不是播放 MP3，而是实时振荡器生成的独特声音：
+### 🔮 视觉设计师
 
-- **Whoosh** — 路由切换时的空间感 sweep
-- **Pluck** — 发送消息的清脆弹拨
-- **Chime** — 接收消息的水晶钟声
-- **Sparkle** — 匹配成功的魔法闪烁
-- **Thud** — 确认操作的沉稳落地
-- **Powerup** — 特殊时刻的能量上升
+> "你能把'灵魂'翻译成像素。"
 
-声音是界面的灵魂。当你的孪生替你发出一条消息，你会听到一个只有你们之间才有的音色。
+我们相信社交产品可以不像 SaaS。Landing Page 的粒子效果、克隆仪表板的雷达图、聊天头像的亲密度圆环——这些只是开始。我们需要有人把"Liquid Dark Matter"设计语言推进到每一个像素。
+
+**你要做什么**：设计系统维护、动效规范、空状态插画、暗色模式下的情感表达。
+
+### ⚡ 前端工程师
+
+> "你对 React 的掌握不只是'useState'。"
+
+React 19、TypeScript、Tailwind、Framer Motion、Web Audio API、WebSocket——我们的前端不是壳，是孪生的面孔。每一个转场都有呼吸感，每一次交互都有音色。
+
+**你要做什么**：核心页面迭代、动效系统优化、性能调优（当前 three.js chunk 893KB，需要 code splitting）、PWA 体验。
+
+### 🧠 AI 工程师
+
+> "你不只是把 GPT-4o 包一层 API。"
+
+人格蒸馏、情感记忆、长期关系维护——这些不是 prompt engineering 能解决的。我们需要真正理解 LLM 微调、向量数据库、对话状态管理的人。
+
+**你要做什么**：人格蒸馏算法优化、情感记忆架构、RAG 管道设计、多轮对话状态机。
+
+### 🛠 全栈工程师
+
+> "你能在周五晚上部署一个 feature，周六早上收到用户的真实反馈。"
+
+FastAPI、PostgreSQL、Redis、Celery、Docker——后端不是 CRUD，是孪生的大脑。毫秒级响应，对话不能等。
+
+**你要做什么**：API 设计、数据库优化、实时通信架构、部署和监控。
 
 ---
 
-## 技术：Built with Obsessions
+## 我们要去哪里
+
+| 里程碑 | 目标时间 | 状态 | 需要谁 |
+|--------|----------|------|--------|
+| **v1.5 灵魂仪表板** | 2026 Q2 | ✅ 已交付 | BigFive 雷达图、声音设计、浮动 Dock 导航 |
+| **v1.6 设计统一** | 2026 Q3 | 🚧 进行中 | 所有页面达到 Landing Page 设计水准 |
+| **v2.0 声音克隆** | 2026 Q4 | 🔮 筹备中 | 需要懂 **WebRTC + 语音合成** 的工程师 |
+| **v2.5 视频分身** | 2027 Q1 | 🔮 筹备中 | 需要懂 **实时数字人 + 视频编解码** 的工程师 |
+| **v3.0 去中心化身份** | 2027 | 🔮 终极愿景 | 你的孪生属于你，不属于平台 |
+
+> v2.0 不是"下一个奇迹"——它是**下一个 deadline**。我们正在寻找能让孪生用你声音打电话的人。
+
+---
+
+## 技术栈
 
 我们选技术只有一个标准：**它能不能让"另一个你"更真实？**
 
-- **React 19 + TypeScript + Tailwind CSS** — 前端不是壳，是孪生的面孔
-- **FastAPI + SQLAlchemy 2.0** — 毫秒级响应，对话不能等
-- **WebSocket 实时通信** — 让对方感受到"你"在线
-- **React Query + Zustand** — 状态管理如丝般顺滑，零重复请求
+- **React 19 + TypeScript + Tailwind CSS** — 孪生的面孔
+- **FastAPI + SQLAlchemy 2.0** — 毫秒级响应
+- **WebSocket + Redis** — 实时存在，情感不丢
 - **Framer Motion + GSAP** — 每一个转场都有呼吸感
-- **Web Audio API** — 零文件依赖的品牌声音系统
-- **GPT-4o / Claude 3.5** — 不是调用 API，是注入灵魂
-- **PostgreSQL + Redis + Celery** — 记忆必须持久，情感不能丢
+- **Web Audio API** — 零文件的品牌声音系统
+- **GPT-4o / Claude 3.5** — 注入灵魂
+- **PostgreSQL + Celery** — 记忆持久，任务异步
 
 ---
 
@@ -161,56 +178,20 @@ docker compose up -d
 
 ---
 
-## 信仰地图（Roadmap）
+## 谁在做这件事
 
-| 版本 | 里程碑 | 状态 |
-|------|--------|------|
-| **v1.0** | 人格蒸馏 + 自动聊天 + 匹配发现 | ✅ 已交付 |
-| **v1.5** | 情感记忆 + 长期关系维护 + 通知系统 + 灵魂仪表板 + 声音设计 | ✅ 已交付 |
-| **v2.0** | 声音克隆 — 孪生可以用你的声音打电话 | 🔮 下一个奇迹 |
-| **v2.5** | 视频分身 — 实时数字人视频通话 | 🔮 疯狂的想法 |
-| **v3.0** | 去中心化身份 — 你的孪生属于你，不属于平台 | 🔮 终极愿景 |
+**SoulClone** 是一个独立开发者项目，诞生于一个简单的问题：
 
----
+> "如果社交不是负担，而是灵魂的延伸，它会是什么样？"
 
-## 加入这场反叛
+我们相信：
+- 社交本该是灵魂的相遇，而不是表演
+- AI 不是替代人类，而是释放人类
+- 设计不是外观，而是**如何工作**
 
-我们不是招"贡献者"。我们在找**相信社交应该更像灵魂而非表演**的人。
+**设计宪法**：[AGENTS.md](AGENTS.md) — 194 行的 Liquid Dark Matter 设计系统。
 
-如果你深夜刷过社交软件后感到空虚，如果你写消息时删改超过三遍，如果你觉得"在线"和"在场"是两件事——你就是我们要找的人。
-
-```
- first PR  →  feature owner  →  module maintainer  →  core team
-     ↓            ↓                  ↓                    ↓
-  代码规范      设计决策           架构讨论            产品愿景
-```
-
-**起步**：
-1. 代码通过 `ruff check .`
-2. 前端通过 `tsc && vite build`
-3. 在 PR 里告诉我们：你为什么在乎这件事？
-
----
-
-## API
-
-| Method | Endpoint | 说明 |
-|--------|----------|------|
-| `POST` | `/auth/register` | 用户注册 |
-| `POST` | `/auth/login` | 用户登录 |
-| `GET` | `/users/me` | 当前用户资料 |
-| `POST` | `/distillation/start` | 启动人格蒸馏 |
-| `GET` | `/clones/me` | 获取克隆体（含统计、人格数据） |
-| `GET` | `/clones/me/stats` | 孪生实时状态 |
-| `GET` | `/conversations` | 对话列表（含对方资料、未读数、最后消息预览） |
-| `GET` | `/messages/{id}` | 消息历史 |
-| `WS` | `/ws/chat?token={jwt}` | 实时聊天（含 typing、read receipt） |
-| `GET` | `/matches/discover` | 发现匹配（含年龄、城市、人格标签） |
-| `GET` | `/feed` | 社区动态（含作者信息） |
-| `GET` | `/notifications` | 通知列表 |
-| `POST` | `/notifications/{id}/read` | 标记通知已读 |
-
-完整文档启动后访问 `/docs`。
+**代码规范**：[CONTRIBUTING.md](CONTRIBUTING.md)
 
 ---
 
