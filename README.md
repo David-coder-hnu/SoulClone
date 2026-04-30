@@ -10,6 +10,11 @@
 </p>
 
 <p align="center">
+  <em>这是一个独立开发者的作品。0 stars，0 forks，1 contributor——因为今天是 Day One。<br/>
+  如果你在读这个，你是前 100 个知道 SoulClone 的人之一。Early isn't a bug. It's a feature.</em>
+</p>
+
+<p align="center">
   <a href="#"><img src="https://img.shields.io/badge/React-19-00f0ff?style=flat-square&logo=react&logoColor=white&labelColor=0a0a10" alt="React 19"></a>
   <a href="#"><img src="https://img.shields.io/badge/TypeScript-5.6-00f0ff?style=flat-square&logo=typescript&logoColor=white&labelColor=0a0a10" alt="TypeScript"></a>
   <a href="#"><img src="https://img.shields.io/badge/FastAPI-0.115-ff006e?style=flat-square&logo=fastapi&logoColor=white&labelColor=0a0a10" alt="FastAPI"></a>
