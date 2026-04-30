@@ -9,6 +9,7 @@ import { useDiscoverProfiles } from '@/hooks/useDiscoverProfiles'
 import { FadeIn } from '@/components/shared/Motion'
 import { DiscoverEmptyState, ErrorState, SkeletonCard } from '@/components/shared/DataStates'
 import AmbientBackground from '@/components/shared/AmbientBackground'
+import { playSound } from '@/lib/sound'
 
 const SWIPE_THRESHOLD = 120
 
@@ -24,6 +25,7 @@ export default function DiscoverPage() {
   const handleDragEnd = (_: any, info: any) => {
     if (info.offset.x > SWIPE_THRESHOLD) {
       setDirection('right')
+      playSound('match')
       animate(x, 400, { duration: 0.3 }).then(() => nextCard())
     } else if (info.offset.x < -SWIPE_THRESHOLD) {
       setDirection('left')
@@ -198,6 +200,7 @@ export default function DiscoverPage() {
                   whileTap={{ scale: 0.92 }}
                   onClick={() => {
                     setDirection('right')
+                    playSound('match')
                     animate(x, 400, { duration: 0.3 }).then(() => nextCard())
                   }}
                   className="w-14 h-14 rounded-full bg-accent-magenta/10 border border-accent-magenta/30 flex items-center justify-center text-accent-magenta hover:bg-accent-magenta/20 transition-colors"

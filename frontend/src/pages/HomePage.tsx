@@ -14,16 +14,17 @@ import { useNotifications } from '@/hooks/useNotifications'
 import { FadeIn, StaggerContainer, StaggerItem, CountUp, GlowPulse } from '@/components/shared/Motion'
 import { SkeletonList, ErrorState } from '@/components/shared/DataStates'
 import AmbientBackground from '@/components/shared/AmbientBackground'
+import { playSound } from '@/lib/sound'
 
 export default function HomePage() {
   const { user } = useAuthStore()
   const navigate = useNavigate()
   const { data: stats, isLoading: statsLoading, error: statsError } = useCloneStats()
   const { data: activities, isLoading: actLoading, error: actError } = useCloneActivities()
-  const { data: notifData } = useNotifications()
+  const { unreadCount: notifUnreadCount } = useNotifications()
 
   const [onlineActive, setOnlineActive] = useState(stats?.status === 'active')
-  const unreadCount = notifData?.unread_count || 0
+  const unreadCount = notifUnreadCount || 0
 
   // Stats with real data fallback
   const statItems = stats ? [
@@ -92,7 +93,10 @@ export default function HomePage() {
                       ? 'bg-accent-cyan/10 border-accent-cyan/30 text-accent-cyan'
                       : 'bg-bg-600 border-white/[0.08] text-text-secondary'
                   }`}
-                  onClick={() => setOnlineActive(!onlineActive)}
+                  onClick={() => {
+                    setOnlineActive(!onlineActive)
+                    if (!onlineActive) playSound('toggle-on')
+                  }}
                 >
                   <motion.div
                     animate={onlineActive ? { scale: [1, 1.4, 1] } : {}}

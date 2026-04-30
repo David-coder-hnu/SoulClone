@@ -7,6 +7,7 @@ from app.models.conversation import Conversation
 from app.models.message import Message
 from app.models.takeover import Takeover
 from app.models.user import User
+from app.services.notification_service import NotificationService
 
 
 class ChatService:
@@ -124,6 +125,19 @@ class ChatService:
 
         await self.db.commit()
         await self.db.refresh(msg)
+
+        # Notify recipient
+        other_user_id = str(conv.participant_b_id) if str(conv.participant_a_id) == sender_id else str(conv.participant_a_id)
+        notif_service = NotificationService(self.db)
+        sender_label = "AI 孪生" if sender_type == "clone" else "对方"
+        await notif_service.create_notification(
+            user_id=other_user_id,
+            type="message",
+            title=f"新消息",
+            content=f"{sender_label}: {content[:40]}{'...' if len(content) > 40 else ''}",
+            payload={"conversation_id": str(conversation_id), "message_id": str(msg.id)},
+        )
+
         return msg
 
     async def start_takeover(self, conversation_id: str, user_id: str, clone_id: str | None = None) -> Takeover:
@@ -135,6 +149,20 @@ class ChatService:
         self.db.add(takeover)
         await self.db.commit()
         await self.db.refresh(takeover)
+
+        # Notify the other participant that human has taken over
+        conv = await self.get_conversation(conversation_id)
+        if conv:
+            other_user_id = str(conv.participant_b_id) if str(conv.participant_a_id) == user_id else str(conv.participant_a_id)
+            notif_service = NotificationService(self.db)
+            await notif_service.create_notification(
+                user_id=other_user_id,
+                type="takeover_request",
+                title="真人接管",
+                content="对方已切换为手动回复模式",
+                payload={"conversation_id": str(conversation_id)},
+            )
+
         return takeover
 
     async def end_takeover(self, takeover_id: str) -> Takeover:

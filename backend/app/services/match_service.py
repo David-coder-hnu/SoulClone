@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.match import Match
 from app.models.user import User
+from app.services.notification_service import NotificationService
 
 
 class MatchService:
@@ -62,6 +63,17 @@ class MatchService:
         self.db.add(match)
         await self.db.commit()
         await self.db.refresh(match)
+
+        # Notify the matched user
+        notif_service = NotificationService(self.db)
+        await notif_service.create_notification(
+            user_id=user_b_id,
+            type="match",
+            title="新的匹配",
+            content=f"AI 为你推荐了一位新朋友，兼容度 {match.compatibility_score}%",
+            payload={"match_id": str(match.id), "compatibility_score": match.compatibility_score},
+        )
+
         return match
 
     async def update_status(self, match_id: str, status: str) -> Match:

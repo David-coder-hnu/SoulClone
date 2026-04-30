@@ -1,6 +1,7 @@
-import { ReactNode } from 'react'
+import { ReactNode, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useLocation } from 'react-router-dom'
+import { playSound } from '@/lib/sound'
 
 interface PageTransitionProps {
   children: ReactNode
@@ -8,6 +9,10 @@ interface PageTransitionProps {
 
 export default function PageTransition({ children }: PageTransitionProps) {
   const location = useLocation()
+
+  useEffect(() => {
+    playSound('page-transition')
+  }, [location.pathname])
 
   return (
     <AnimatePresence mode="wait">

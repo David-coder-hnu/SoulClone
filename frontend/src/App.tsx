@@ -3,6 +3,7 @@ import { useAuthStore } from '@/stores/authStore'
 import PageTransition from '@/components/shared/PageTransition'
 import GlobalRipple from '@/components/shared/Ripple'
 import ScrollProgress from '@/components/shared/ScrollProgress'
+import SoundProvider from '@/components/shared/SoundProvider'
 import LandingPage from '@/pages/LandingPage'
 import LoginPage from '@/pages/LoginPage'
 import RegisterPage from '@/pages/RegisterPage'
@@ -21,10 +22,11 @@ function App() {
   const location = useLocation()
 
   return (
-    <div className="min-h-screen bg-background text-text-primary">
-      <GlobalRipple />
-      <ScrollProgress />
-      <PageTransition>
+    <SoundProvider>
+      <div className="min-h-screen bg-background text-text-primary">
+        <GlobalRipple />
+        <ScrollProgress />
+        <PageTransition>
         <Routes location={location}>
           <Route path="/" element={!isAuthenticated ? <LandingPage /> : <Navigate to="/home" />} />
           <Route path="/login" element={!isAuthenticated ? <LoginPage /> : <Navigate to="/home" />} />
@@ -41,6 +43,7 @@ function App() {
         </Routes>
       </PageTransition>
     </div>
+    </SoundProvider>
   )
 }
 

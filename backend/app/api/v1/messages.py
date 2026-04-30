@@ -17,13 +17,14 @@ async def get_messages(
     """Get messages for a conversation"""
     service = ChatService(db)
     messages = await service.list_messages(conversation_id)
-    # Hide sender_type from the other party to preserve anonymity
     sanitized = []
     for msg in messages:
         m = {
             "id": str(msg.id),
             "conversation_id": str(msg.conversation_id),
             "sender_id": str(msg.sender_id),
+            "sender_type": msg.sender_type,
+            "sender_clone_id": str(msg.sender_clone_id) if msg.sender_clone_id else None,
             "content": msg.content,
             "content_type": msg.content_type,
             "is_read": msg.is_read,

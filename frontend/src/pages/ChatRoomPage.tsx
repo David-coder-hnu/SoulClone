@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
@@ -6,60 +6,40 @@ import {
   Hand, MoreHorizontal
 } from 'lucide-react'
 import { formatDate } from '@/lib/utils'
+import { api } from '@/lib/api'
 import { Avatar } from '@/components/ui/Avatar'
 import { Badge } from '@/components/ui/Badge'
+import { useAuthStore } from '@/stores/authStore'
+import { useMessages } from '@/hooks/useMessages'
+import { useConversation } from '@/hooks/useConversation'
+import { useChatWebSocket } from '@/hooks/useChatWebSocket'
+import { playSound } from '@/lib/sound'
+import { ErrorState, LoadingSpinner } from '@/components/shared/DataStates'
 import AmbientBackground from '@/components/shared/AmbientBackground'
 
-interface Message {
-  id: string
-  is_from_me: boolean
-  content: string
-  created_at: string
-  is_ai_twin?: boolean
-}
-
-const mockMessages: Message[] = [
-  {
-    id: '1',
-    is_from_me: false,
-    content: '嗨，你好呀！我是通过匹配发现你的，感觉我们兴趣很相似 ✨',
-    created_at: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
-  },
-  {
-    id: '2',
-    is_from_me: true,
-    content: '哈哈真的吗？你平时喜欢做什么？',
-    created_at: new Date(Date.now() - 1000 * 60 * 60 * 1.5).toISOString(),
-  },
-  {
-    id: '3',
-    is_from_me: false,
-    content: '我喜欢摄影和咖啡！周末经常带着相机去街拍，然后在咖啡馆修图。你呢？',
-    created_at: new Date(Date.now() - 1000 * 60 * 60).toISOString(),
-  },
-  {
-    id: '4',
-    is_from_me: true,
-    is_ai_twin: true,
-    content: '我也喜欢拍照！不过我更多是用手机拍生活碎片 😂',
-    created_at: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
-  },
-  {
-    id: '5',
-    is_from_me: false,
-    content: '手机摄影也超棒的！重要的是记录下来的那个瞬间～ 你最近拍了什么好看的照片吗？',
-    created_at: new Date(Date.now() - 1000 * 60 * 5).toISOString(),
-  },
-]
-
 export default function ChatRoomPage() {
-  useParams()
+  const { conversationId } = useParams<{ conversationId: string }>()
   const navigate = useNavigate()
-  const [messages, setMessages] = useState<Message[]>(mockMessages)
+  const { user } = useAuthStore()
+
+  const {
+    data: conversation,
+    isLoading: convLoading,
+    error: convError,
+  } = useConversation(conversationId || '')
+
+  const {
+    data: messages,
+    isLoading: msgLoading,
+    error: msgError,
+  } = useMessages(conversationId || '')
+
+  const { sendMessage: sendWsMessage } = useChatWebSocket(conversationId || '')
+
   const [input, setInput] = useState('')
   const [isManualMode, setIsManualMode] = useState(false)
   const [showModeHint, setShowModeHint] = useState(false)
-  const [isTyping, setIsTyping] = useState(false)
+  const [isTyping] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
@@ -67,30 +47,22 @@ export default function ChatRoomPage() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
-  const sendMessage = () => {
-    if (!input.trim()) return
-    const newMsg: Message = {
-      id: Date.now().toString(),
-      is_from_me: true,
-      content: input,
-      created_at: new Date().toISOString(),
-    }
-    setMessages((p) => [...p, newMsg])
+  const sendMessage = useCallback(async () => {
+    if (!input.trim() || !conversationId) return
+    const content = input.trim()
     setInput('')
     inputRef.current?.focus()
 
-    setIsTyping(true)
-    setTimeout(() => {
-      setIsTyping(false)
-      const reply: Message = {
-        id: (Date.now() + 1).toString(),
-        is_from_me: false,
-        content: '听起来很棒！有机会一定要看看你的作品 ✨',
-        created_at: new Date().toISOString(),
-      }
-      setMessages((p) => [...p, reply])
-    }, 2000)
-  }
+    // Note: in production we'd use useMutation with optimistic updates.
+    // For simplicity we just POST and let the query refetch / WebSocket update.
+    try {
+      await api.post(`/messages/${conversationId}`, { content })
+      sendWsMessage(content)
+      playSound('send-message')
+    } catch {
+      // fallback: let user retry
+    }
+  }, [input, conversationId, user?.id, sendWsMessage])
 
   const toggleMode = () => {
     if (!isManualMode) {
@@ -100,10 +72,29 @@ export default function ChatRoomPage() {
     setIsManualMode(!isManualMode)
   }
 
+  const isLoading = convLoading || msgLoading
+  const error = convError || msgError
+
+  if (error) {
+    return (
+      <AmbientBackground variant="chat" className="h-screen flex flex-col">
+        <div className="flex-1 flex items-center justify-center p-4">
+          <ErrorState
+            message="加载对话失败"
+            onRetry={() => window.location.reload()}
+          />
+        </div>
+      </AmbientBackground>
+    )
+  }
+
+  const partnerName = conversation?.partner_nickname || '用户'
+  const partnerAvatar = conversation?.partner_avatar
+  const intimacy = Math.round(conversation?.intimacy_score || 0)
+
   return (
     <AmbientBackground variant="chat" className="h-screen flex flex-col">
-
-      {/* Header: Top Navigation (glass) */}
+      {/* Header */}
       <div className="glass border-b border-white/[0.06] px-4 py-3 flex items-center gap-3 shrink-0 z-20">
         <motion.button
           whileHover={{ scale: 1.1 }}
@@ -115,9 +106,14 @@ export default function ChatRoomPage() {
         </motion.button>
 
         <div className="flex-1 flex items-center gap-3">
-          <Avatar size="sm" status="online" fallback="雨" />
+          <Avatar
+            size="sm"
+            status={conversation?.partner_is_online ? 'online' : undefined}
+            fallback={partnerName[0]}
+            src={partnerAvatar || undefined}
+          />
           <div>
-            <h2 className="font-medium text-sm">小雨</h2>
+            <h2 className="font-medium text-sm">{partnerName}</h2>
             <div className="flex items-center gap-1 text-text-tertiary text-xs">
               <Sparkles size={10} className="text-accent-gold" />
               <span>身份未知</span>
@@ -128,7 +124,7 @@ export default function ChatRoomPage() {
         <div className="flex items-center gap-2">
           <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full glass border border-white/[0.08]">
             <Phone size={12} className="text-accent-gold" />
-            <span className="text-xs text-text-secondary">亲密度 65</span>
+            <span className="text-xs text-text-secondary">亲密度 {intimacy}</span>
           </div>
           <motion.button
             whileHover={{ scale: 1.1 }}
@@ -142,79 +138,88 @@ export default function ChatRoomPage() {
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4 relative z-10">
-        {/* System message */}
-        <div className="text-center py-2">
-          <span className="text-[10px] text-text-tertiary">对方 AI 孪生已接管对话</span>
-        </div>
+        {isLoading ? (
+          <LoadingSpinner />
+        ) : (
+          <>
+            {/* System message */}
+            <div className="text-center py-2">
+              <span className="text-[10px] text-text-tertiary">对方 AI 孪生已接管对话</span>
+            </div>
 
-        <AnimatePresence initial={false}>
-          {messages.map((msg, index) => (
-            <motion.div
-              key={msg.id}
-              initial={{ opacity: 0, y: 10, scale: 0.95 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              transition={{ type: 'spring', stiffness: 400, damping: 25, delay: index < 5 ? 0 : 0 }}
-              className={`flex ${msg.is_from_me ? 'justify-end' : 'justify-start'}`}
-            >
-              <div className="max-w-[80%] sm:max-w-[70%]">
-                {/* AI Twin badge */}
-                {msg.is_ai_twin && (
-                  <Badge variant="gold" size="sm" className="mb-1">
-                    AI 孪生
-                  </Badge>
-                )}
+            <AnimatePresence initial={false}>
+              {(messages || []).map((msg, index) => {
+                const isMe = msg.sender_id === user?.id
+                const isClone = msg.sender_type === 'clone'
+                return (
+                  <motion.div
+                    key={msg.id}
+                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    transition={{ type: 'spring', stiffness: 400, damping: 25, delay: index < 5 ? 0 : 0 }}
+                    className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}
+                  >
+                    <div className="max-w-[80%] sm:max-w-[70%]">
+                      {isClone && (
+                        <Badge variant="gold" size="sm" className="mb-1">
+                          AI 孪生
+                        </Badge>
+                      )}
+                      <motion.div
+                        whileHover={{ scale: 1.02 }}
+                        transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+                        className={`px-4 py-3 rounded-2xl ${
+                          isMe && !isClone
+                            ? 'bg-accent-cyan/10 border border-accent-cyan/25 text-text-primary rounded-br-sm'
+                            : isClone
+                            ? 'bg-gradient-to-r from-cyan-500/5 to-magenta-500/5 border border-cyan-400/20 text-text-primary rounded-br-sm'
+                            : 'bg-bg-600 border border-white/[0.08] rounded-bl-sm'
+                        }`}
+                      >
+                        <p className="text-sm leading-relaxed">{msg.content}</p>
+                        <p className="text-[10px] text-text-tertiary mt-1.5 text-right">
+                          {formatDate(msg.created_at)}
+                        </p>
+                      </motion.div>
+                    </div>
+                  </motion.div>
+                )
+              })}
+            </AnimatePresence>
+
+            {/* Typing indicator */}
+            <AnimatePresence>
+              {isTyping && (
                 <motion.div
-                  whileHover={{ scale: 1.02 }}
-                  transition={{ type: 'spring', stiffness: 400, damping: 25 }}
-                  className={`px-4 py-3 rounded-2xl ${
-                    msg.is_from_me && !msg.is_ai_twin
-                      ? 'bg-accent-cyan/10 border border-accent-cyan/25 text-text-primary rounded-br-sm'
-                      : msg.is_ai_twin
-                      ? 'bg-gradient-to-r from-cyan-500/5 to-magenta-500/5 border border-cyan-400/20 text-text-primary rounded-br-sm'
-                      : 'bg-bg-600 border border-white/[0.08] rounded-bl-sm'
-                  }`}
+                  initial={{ opacity: 0, y: 5 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 5 }}
+                  className="flex justify-start"
                 >
-                  <p className="text-sm leading-relaxed">{msg.content}</p>
-                  <p className="text-[10px] text-text-tertiary mt-1.5 text-right">
-                    {formatDate(msg.created_at)}
-                  </p>
+                  <div className="bg-bg-600 border border-white/[0.08] rounded-2xl rounded-bl-sm px-4 py-3">
+                    <div className="flex items-center gap-1.5">
+                      <motion.div
+                        animate={{ y: [0, -4, 0] }}
+                        transition={{ duration: 0.5, repeat: Infinity, delay: 0 }}
+                        className="w-1.5 h-1.5 rounded-full bg-text-tertiary"
+                      />
+                      <motion.div
+                        animate={{ y: [0, -4, 0] }}
+                        transition={{ duration: 0.5, repeat: Infinity, delay: 0.15 }}
+                        className="w-1.5 h-1.5 rounded-full bg-text-tertiary"
+                      />
+                      <motion.div
+                        animate={{ y: [0, -4, 0] }}
+                        transition={{ duration: 0.5, repeat: Infinity, delay: 0.3 }}
+                        className="w-1.5 h-1.5 rounded-full bg-text-tertiary"
+                      />
+                    </div>
+                  </div>
                 </motion.div>
-              </div>
-            </motion.div>
-          ))}
-        </AnimatePresence>
-
-        {/* Typing indicator */}
-        <AnimatePresence>
-          {isTyping && (
-            <motion.div
-              initial={{ opacity: 0, y: 5 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 5 }}
-              className="flex justify-start"
-            >
-              <div className="bg-bg-600 border border-white/[0.08] rounded-2xl rounded-bl-sm px-4 py-3">
-                <div className="flex items-center gap-1.5">
-                  <motion.div
-                    animate={{ y: [0, -4, 0] }}
-                    transition={{ duration: 0.5, repeat: Infinity, delay: 0 }}
-                    className="w-1.5 h-1.5 rounded-full bg-text-tertiary"
-                  />
-                  <motion.div
-                    animate={{ y: [0, -4, 0] }}
-                    transition={{ duration: 0.5, repeat: Infinity, delay: 0.15 }}
-                    className="w-1.5 h-1.5 rounded-full bg-text-tertiary"
-                  />
-                  <motion.div
-                    animate={{ y: [0, -4, 0] }}
-                    transition={{ duration: 0.5, repeat: Infinity, delay: 0.3 }}
-                    className="w-1.5 h-1.5 rounded-full bg-text-tertiary"
-                  />
-                </div>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+              )}
+            </AnimatePresence>
+          </>
+        )}
 
         <div ref={messagesEndRef} />
       </div>
