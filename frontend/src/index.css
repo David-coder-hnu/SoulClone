@@ -177,10 +177,6 @@
   .glow-cyan-lg {
     box-shadow: 0 0 24px rgba(0, 240, 255, 0.5), 0 0 48px rgba(0, 240, 255, 0.25);
   }
-  .glow-cyan-xl {
-    box-shadow: 0 0 40px rgba(0, 240, 255, 0.6), 0 0 80px rgba(0, 240, 255, 0.3);
-  }
-
   .glow-magenta-sm {
     box-shadow: 0 0 8px rgba(255, 0, 110, 0.3);
   }
@@ -199,20 +195,6 @@
   }
   .glow-gold-lg {
     box-shadow: 0 0 24px rgba(255, 190, 11, 0.5), 0 0 48px rgba(255, 190, 11, 0.25);
-  }
-
-  /* ───────── Legacy glow aliases (keep for backward compat) ───────── */
-  .glow-cyan {
-    box-shadow: 0 0 20px rgba(0, 240, 255, 0.3), 0 0 40px rgba(0, 240, 255, 0.1);
-  }
-  .glow-magenta {
-    box-shadow: 0 0 20px rgba(255, 0, 110, 0.3), 0 0 40px rgba(255, 0, 110, 0.1);
-  }
-  .glow-gold {
-    box-shadow: 0 0 20px rgba(255, 190, 11, 0.3), 0 0 40px rgba(255, 190, 11, 0.1);
-  }
-  .glow-cyan-strong {
-    box-shadow: 0 0 30px rgba(0, 240, 255, 0.4), 0 0 60px rgba(0, 240, 255, 0.15), inset 0 0 20px rgba(0, 240, 255, 0.05);
   }
 
   /* ───────── Focus Ring (§11.2) ───────── */

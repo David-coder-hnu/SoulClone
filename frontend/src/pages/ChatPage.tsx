@@ -91,22 +91,40 @@ export default function ChatPage() {
                           <div className="absolute left-0 top-2 bottom-2 w-[3px] rounded-full bg-gradient-to-b from-accent-cyan via-accent-magenta to-accent-gold opacity-80 shadow-[0_0_8px_rgba(0,240,255,0.3)]" />
                         )}
 
-                        {/* Avatar */}
+                        {/* Avatar with intimacy ring */}
                         <div className="relative shrink-0">
+                          <svg className="absolute -inset-1 w-14 h-14" viewBox="0 0 56 56">
+                            <circle
+                              cx="28" cy="28" r="26"
+                              fill="none"
+                              stroke="rgba(255,255,255,0.06)"
+                              strokeWidth={2}
+                            />
+                            <circle
+                              cx="28" cy="28" r="26"
+                              fill="none"
+                              stroke={conv.intimacy >= 70 ? '#ffbe0b' : conv.intimacy >= 40 ? '#00f0ff' : '#ff006e'}
+                              strokeWidth={2}
+                              strokeLinecap="round"
+                              strokeDasharray={`${conv.intimacy * 1.63} 163`}
+                              transform="rotate(-90 28 28)"
+                              style={{ transition: 'stroke-dasharray 0.8s ease-out' }}
+                            />
+                          </svg>
                           {conv.partner.avatar ? (
                             <img
                               src={conv.partner.avatar}
                               alt={conv.partner.nickname}
-                              className="w-12 h-12 rounded-full object-cover border border-white/10"
+                              className="w-12 h-12 rounded-full object-cover border border-white/10 relative z-10"
                             />
                           ) : (
-                            <div className="w-12 h-12 rounded-full bg-bg-600 border border-white/10 flex items-center justify-center">
+                            <div className="w-12 h-12 rounded-full bg-bg-600 border border-white/10 flex items-center justify-center relative z-10">
                               <MessageSquare size={18} className="text-text-tertiary" />
                             </div>
                           )}
                           {conv.partner.is_online && (
                             <GlowPulse color="cyan">
-                              <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-accent-cyan border-2 border-background" />
+                              <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-accent-cyan border-2 border-background z-20" />
                             </GlowPulse>
                           )}
                         </div>

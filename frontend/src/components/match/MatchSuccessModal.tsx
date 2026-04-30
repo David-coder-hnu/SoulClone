@@ -33,7 +33,7 @@ export default function MatchSuccessModal({ isOpen, onClose, matchName }: MatchS
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
               transition={{ type: 'spring', stiffness: 200, damping: 15, delay: 0.2 }}
-              className="w-20 h-20 mx-auto mb-4 rounded-full bg-gradient-to-br from-accent-cyan to-accent-magenta flex items-center justify-center glow-cyan"
+              className="w-20 h-20 mx-auto mb-4 rounded-full bg-gradient-to-br from-accent-cyan to-accent-magenta flex items-center justify-center glow-cyan-md"
             >
               <Heart size={36} className="text-white fill-white" />
             </motion.div>

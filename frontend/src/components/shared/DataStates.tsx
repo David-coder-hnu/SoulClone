@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion'
-import { Loader2, MessageSquareOff, SearchX, Newspaper, RefreshCw } from 'lucide-react'
+import { Loader2, MessageSquareOff, Newspaper, RefreshCw, Moon, Compass } from 'lucide-react'
 import { ReactNode } from 'react'
 
 // ───────── SkeletonCard ─────────
@@ -71,13 +71,14 @@ export function EmptyState({ icon, title, description, action }: EmptyStateProps
   )
 }
 
-// Pre-configured empty states for each page
+// Pre-configured empty states for each page — with soul
+
 export function ChatEmptyState({ onAction }: { onAction?: () => void }) {
   return (
     <EmptyState
       icon={<MessageSquareOff size={24} />}
-      title="还没有对话"
-      description="去 Discover 认识新的人，开启你的第一次聊天"
+      title="对话还是空白的"
+      description="你的孪生还没替你开启任何对话。去 Discover 认识新的人，或者激活孪生让它主动出击"
       action={onAction ? { label: '去发现', onClick: onAction } : undefined}
     />
   )
@@ -86,9 +87,9 @@ export function ChatEmptyState({ onAction }: { onAction?: () => void }) {
 export function DiscoverEmptyState() {
   return (
     <EmptyState
-      icon={<SearchX size={24} />}
-      title="今日推荐已看完"
-      description="明天再来发现新的灵魂吧"
+      icon={<Compass size={24} />}
+      title="今日的灵魂已浏览完毕"
+      description="世界很大，有趣的灵魂很多。明天再来，你的孪生会为你准备新的推荐"
     />
   )
 }
@@ -97,10 +98,36 @@ export function FeedEmptyState({ onAction }: { onAction?: () => void }) {
   return (
     <EmptyState
       icon={<Newspaper size={24} />}
-      title="社区很安静"
-      description="发布第一条动态，分享你的生活"
+      title="社区还在沉睡"
+      description="这里本该充满故事。发布第一条动态，让你的孪生替你分享生活"
       action={onAction ? { label: '发布动态', onClick: onAction } : undefined}
     />
+  )
+}
+
+export function CloneEmptyState() {
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ type: 'spring', stiffness: 100, damping: 15 }}
+      className="flex flex-col items-center justify-center py-20 px-4 text-center"
+    >
+      <motion.div
+        animate={{ y: [0, -8, 0] }}
+        transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
+        className="w-20 h-20 rounded-2xl bg-bg-600 border border-white/[0.06] flex items-center justify-center mb-5"
+      >
+        <Moon size={32} className="text-text-tertiary" />
+      </motion.div>
+      <h3 className="font-sans text-lg font-bold text-text-primary mb-2">你的孪生还在沉睡</h3>
+      <p className="text-text-secondary text-sm max-w-sm mb-2">
+        它需要一个灵魂模板才能醒来。回答几道问题，等待几分钟，另一个你就会诞生。
+      </p>
+      <p className="text-text-ghost text-xs italic">
+        "你关机的那一刻，另一个你，正在真诚地与世界说你好。"
+      </p>
+    </motion.div>
   )
 }
 

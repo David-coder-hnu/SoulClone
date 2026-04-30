@@ -3,7 +3,8 @@ import { motion } from 'framer-motion'
 import { Link, useNavigate } from 'react-router-dom'
 import {
   MessageCircle, Heart, Users, Activity,
-  ChevronRight, Sparkles, Bell
+  ChevronRight, Sparkles, Bell,
+  Zap, MessageSquare, Star, Ghost
 } from 'lucide-react'
 import AppShell from '@/components/layout/AppShell'
 import { Card } from '@/components/ui/Card'
@@ -31,7 +32,7 @@ export default function HomePage() {
     { icon: MessageCircle, label: '今日消息', value: stats.total_messages_sent || 0, color: 'text-accent-cyan', bg: 'bg-accent-cyan' },
     { icon: Heart, label: '新匹配', value: stats.total_matches || 0, color: 'text-accent-magenta', bg: 'bg-accent-magenta' },
     { icon: Users, label: '深入聊天', value: stats.total_conversations || 0, color: 'text-accent-gold', bg: 'bg-accent-gold' },
-    { icon: Activity, label: '社区互动', value: (stats.total_posts || 0) + (stats.total_comments || 0), color: 'text-accent-cyan', bg: 'bg-accent-cyan' },
+    { icon: Activity, label: '社区互动', value: (stats.total_posts || 0) + (stats.total_comments || 0), color: 'text-text-primary', bg: 'bg-white' },
   ] : []
 
   const isLoading = statsLoading || actLoading
@@ -56,13 +57,15 @@ export default function HomePage() {
           <FadeIn>
             <div className="flex items-center justify-between mb-8">
               <div>
-                <h1 className="font-sans text-2xl md:text-3xl font-bold">
-                  你好, <span className="text-accent-cyan">{user?.nickname || '探索者'}</span>
+                <h1 className="font-sans text-xl md:text-2xl font-bold">
+                  {stats?.status === 'active'
+                    ? <>你的孪生今天替你回复了 <span className="text-accent-cyan font-mono">{stats.total_messages_sent || 0}</span> 条消息</>
+                    : <>你好, <span className="text-accent-cyan">{user?.nickname || '探索者'}</span></>}
                 </h1>
                 <p className="text-text-secondary mt-1">
                   {stats?.status === 'active'
-                    ? '你的在线状态正在自动运行'
-                    : '你的在线状态当前离线'}
+                    ? '它正在替你社交、匹配、维系关系'
+                    : '你的孪生正在待命，激活后替你社交'}
                 </p>
               </div>
               <div className="flex items-center gap-3">
@@ -179,21 +182,34 @@ export default function HomePage() {
                 </div>
               ) : activities && activities.length > 0 ? (
                 <div className="space-y-3">
-                  {activities.slice(0, 5).map((activity, i) => (
-                    <motion.div
-                      key={activity.id}
-                      initial={{ opacity: 0, x: -10 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.3 + i * 0.05 }}
-                      className="flex items-center gap-3 p-3 rounded-xl bg-bg-600/50 hover:bg-bg-600 transition-colors"
-                    >
-                      <div className="w-1.5 h-1.5 rounded-full bg-accent-cyan/60" />
-                      <span className="text-sm text-text-secondary flex-1">{activity.description || activity.action_type}</span>
-                      <span className="text-xs text-text-tertiary font-mono">
-                        {new Date(activity.created_at).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}
-                      </span>
-                    </motion.div>
-                  ))}
+                  {activities.slice(0, 5).map((activity, i) => {
+                    const typeConfig: Record<string, { icon: typeof Zap; color: string; bg: string }> = {
+                      message: { icon: MessageSquare, color: 'text-accent-cyan', bg: 'bg-accent-cyan/10' },
+                      match: { icon: Heart, color: 'text-accent-magenta', bg: 'bg-accent-magenta/10' },
+                      post: { icon: Star, color: 'text-accent-gold', bg: 'bg-accent-gold/10' },
+                      takeover: { icon: Ghost, color: 'text-accent-cyan', bg: 'bg-accent-cyan/10' },
+                      default: { icon: Zap, color: 'text-text-tertiary', bg: 'bg-white/5' },
+                    }
+                    const config = typeConfig[activity.action_type] || typeConfig.default
+                    const Icon = config.icon
+                    return (
+                      <motion.div
+                        key={activity.id}
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.3 + i * 0.05 }}
+                        className="flex items-center gap-3 p-3 rounded-xl bg-bg-600/50 hover:bg-bg-600 transition-colors"
+                      >
+                        <div className={`w-8 h-8 rounded-lg ${config.bg} flex items-center justify-center shrink-0`}>
+                          <Icon size={14} className={config.color} />
+                        </div>
+                        <span className="text-sm text-text-secondary flex-1">{activity.description || activity.action_type}</span>
+                        <span className="text-xs text-text-tertiary font-mono">
+                          {new Date(activity.created_at).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                      </motion.div>
+                    )
+                  })}
                 </div>
               ) : (
                 <div className="text-center py-8">

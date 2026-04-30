@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { motion, useMotionValue, useTransform, animate } from 'framer-motion'
 import {
-  MapPin, Heart, X, Star,
+  MapPin, Heart, X, Star, Sparkles,
 } from 'lucide-react'
 import AppShell from '@/components/layout/AppShell'
 import { Card } from '@/components/ui/Card'
@@ -119,36 +119,62 @@ export default function DiscoverPage() {
                         {currentProfile.bio || '暂无简介'}
                       </p>
 
-                      {/* Tags */}
+                      {/* Match Score */}
+                      <div className="flex items-center gap-2 mb-3">
+                        <Sparkles size={14} className="text-accent-gold" />
+                        <span className="text-xs text-text-tertiary">匹配度</span>
+                        <span className="text-sm font-mono font-bold text-accent-gold">
+                          {Math.round((currentProfile.match_score ?? 0.5) * 100)}%
+                        </span>
+                      </div>
+
+                      {/* Tags with color */}
                       {currentProfile.tags && currentProfile.tags.length > 0 && (
                         <div className="flex flex-wrap gap-2 mb-4">
-                          {currentProfile.tags.map((tag) => (
-                            <span
-                              key={tag}
-                              className="px-2.5 py-1 rounded-full bg-bg-600 border border-white/[0.08] text-xs text-text-secondary"
-                            >
-                              {tag}
-                            </span>
-                          ))}
+                          {currentProfile.tags.map((tag, i) => {
+                            const palettes = [
+                              'bg-accent-cyan/10 border-accent-cyan/20 text-accent-cyan',
+                              'bg-accent-magenta/10 border-accent-magenta/20 text-accent-magenta',
+                              'bg-accent-gold/10 border-accent-gold/20 text-accent-gold',
+                            ]
+                            return (
+                              <span
+                                key={tag}
+                                className={`px-2.5 py-1 rounded-full border text-xs ${palettes[i % 3]}`}
+                              >
+                                {tag}
+                              </span>
+                            )
+                          })}
                         </div>
                       )}
 
-                      {/* Traits */}
+                      {/* Traits with semantic colors */}
                       {currentProfile.traits && Object.keys(currentProfile.traits).length > 0 && (
                         <div className="space-y-2">
-                          {Object.entries(currentProfile.traits).slice(0, 3).map(([key, value]) => (
-                            <div key={key} className="flex items-center gap-3">
-                              <span className="text-xs text-text-tertiary w-12 shrink-0">{key}</span>
-                              <div className="flex-1 h-1.5 bg-bg-600 rounded-full overflow-hidden">
-                                <motion.div
-                                  initial={{ width: 0 }}
-                                  animate={{ width: `${(value as number) * 100}%` }}
-                                  transition={{ duration: 0.8, ease: 'easeOut' }}
-                                  className="h-full bg-gradient-to-r from-accent-cyan to-accent-magenta rounded-full"
-                                />
+                          {Object.entries(currentProfile.traits).slice(0, 3).map(([key, value], i) => {
+                            const colors = [
+                              'bg-accent-cyan',
+                              'bg-accent-magenta',
+                              'bg-accent-gold',
+                            ]
+                            return (
+                              <div key={key} className="flex items-center gap-3">
+                                <span className="text-xs text-text-tertiary w-12 shrink-0">{key}</span>
+                                <div className="flex-1 h-1.5 bg-bg-600 rounded-full overflow-hidden">
+                                  <motion.div
+                                    initial={{ width: 0 }}
+                                    animate={{ width: `${(value as number) * 100}%` }}
+                                    transition={{ duration: 0.8, ease: 'easeOut' }}
+                                    className={`h-full rounded-full ${colors[i % 3]}`}
+                                  />
+                                </div>
+                                <span className="text-[10px] font-mono text-text-tertiary w-6 text-right">
+                                  {Math.round((value as number) * 100)}
+                                </span>
                               </div>
-                            </div>
-                          ))}
+                            )
+                          })}
                         </div>
                       )}
                     </div>

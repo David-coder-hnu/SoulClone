@@ -15,7 +15,7 @@ export default function ProfilePreview({ nickname, traits }: ProfilePreviewProps
       className="glass-elevated rounded-3xl p-8 text-center"
       style={{ perspective: 1000 }}
     >
-      <div className="w-20 h-20 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-accent-cyan to-accent-magenta flex items-center justify-center glow-cyan">
+      <div className="w-20 h-20 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-accent-cyan to-accent-magenta flex items-center justify-center glow-cyan-md">
         <Sparkles size={32} className="text-white" />
       </div>
       <h3 className="font-sans text-2xl font-bold mb-2">{nickname}的数字档案</h3>

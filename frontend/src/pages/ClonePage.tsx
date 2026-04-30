@@ -8,6 +8,7 @@ import { Avatar } from '@/components/ui/Avatar'
 import { Badge } from '@/components/ui/Badge'
 import { Card } from '@/components/ui/Card'
 import AmbientBackground from '@/components/shared/AmbientBackground'
+import BigFiveRadar from '@/components/shared/BigFiveRadar'
 import { useCloneProfile } from '@/hooks/useCloneProfile'
 import { useCloneStats } from '@/hooks/useCloneStats'
 import { useCloneActivities } from '@/hooks/useCloneActivities'
@@ -107,7 +108,11 @@ export default function ClonePage() {
                     <Avatar size="xl" ring="cyan" status={active ? 'ai-twin-online' : 'ai-twin-offline'} fallback="AI" />
                     <h2 className="font-sans text-xl font-bold mt-4">{stats?.name || '你的数字孪生'}</h2>
                     <Badge variant={active ? 'cyan' : 'default'} size="sm" className="mt-2">
-                      {active ? 'AI 孪生在线' : 'AI 孪生离线'}
+                      {active
+                        ? (stats?.total_conversations ?? 0) > 0
+                          ? `正在维护 ${stats?.total_conversations} 段关系`
+                          : '自动运行中'
+                        : '待命'}
                     </Badge>
 
                     {/* Stats Row */}
@@ -220,7 +225,13 @@ export default function ClonePage() {
                         className="w-full h-1.5 bg-bg-600 rounded-full appearance-none cursor-pointer disabled:opacity-50 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-accent-cyan [&::-webkit-slider-thumb]:shadow-[0_0_12px_rgba(0,240,255,0.5)] [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-background"
                       />
                       <div
-                        className="absolute top-1/2 -translate-y-1/2 left-0 h-1.5 bg-gradient-to-r from-accent-cyan to-accent-magenta rounded-full pointer-events-none"
+                        className={`absolute top-1/2 -translate-y-1/2 left-0 h-1.5 rounded-full pointer-events-none ${
+                          autonomy <= 3
+                            ? 'bg-accent-cyan'
+                            : autonomy <= 7
+                              ? 'bg-gradient-to-r from-accent-cyan to-accent-magenta'
+                              : 'bg-gradient-to-r from-accent-magenta to-accent-gold'
+                        }`}
                         style={{ width: `${(autonomy - 1) / 9 * 100}%` }}
                       />
                     </div>
@@ -247,33 +258,14 @@ export default function ClonePage() {
                   transition={{ delay: 0.3 }}
                 >
                   <Card variant="flat">
-                    <div className="flex items-center gap-2 mb-4">
+                    <div className="flex items-center gap-2 mb-3">
                       <Brain size={18} className="text-accent-cyan" />
                       <h3 className="font-medium">人格核心</h3>
                     </div>
-                    <div className="space-y-4">
-                      {traits.map((trait, i) => (
-                        <motion.div
-                          key={trait.label}
-                          initial={{ opacity: 0, x: -10 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ delay: 0.3 + i * 0.05 }}
-                        >
-                          <div className="flex justify-between text-xs mb-1.5">
-                            <span className="text-text-secondary">{trait.label}</span>
-                            <span className="text-text-primary font-mono font-medium">{trait.value}</span>
-                          </div>
-                          <div className="h-1.5 bg-bg-600 rounded-full overflow-hidden">
-                            <motion.div
-                              initial={{ width: 0 }}
-                              animate={{ width: `${trait.value}%` }}
-                              transition={{ delay: 0.4 + i * 0.08, type: 'spring', stiffness: 100 }}
-                              className="h-full bg-gradient-to-r from-accent-cyan to-accent-magenta"
-                            />
-                          </div>
-                        </motion.div>
-                      ))}
-                    </div>
+                    <BigFiveRadar
+                      traits={Object.fromEntries(traits.map((t) => [t.label, t.value / 100]))}
+                      size={160}
+                    />
                   </Card>
                 </motion.div>
 
@@ -322,19 +314,28 @@ export default function ClonePage() {
                 <Card variant="flat">
                   <h3 className="font-medium mb-4">今日活动</h3>
                   <div className="space-y-3">
-                    {activities && activities.length > 0 ? activities.slice(0, 10).map((activity, i) => (
-                      <motion.div
-                        key={activity.id}
-                        initial={{ opacity: 0, x: -10 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: 0.5 + i * 0.08 }}
-                        className="flex items-center gap-3"
-                      >
-                        <span className="text-xs text-text-tertiary font-mono w-10">{formatTime(activity.created_at)}</span>
-                        <div className="w-1.5 h-1.5 rounded-full bg-accent-cyan/60" />
-                        <span className="text-sm text-text-secondary">{activity.description || activity.action_type}</span>
-                      </motion.div>
-                    )) : (
+                    {activities && activities.length > 0 ? activities.slice(0, 10).map((activity, i) => {
+                      const dotColors: Record<string, string> = {
+                        message: 'bg-accent-cyan',
+                        match: 'bg-accent-magenta',
+                        post: 'bg-accent-gold',
+                        takeover: 'bg-accent-cyan',
+                        default: 'bg-text-tertiary',
+                      }
+                      return (
+                        <motion.div
+                          key={activity.id}
+                          initial={{ opacity: 0, x: -10 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: 0.5 + i * 0.08 }}
+                          className="flex items-center gap-3"
+                        >
+                          <span className="text-xs text-text-tertiary font-mono w-10">{formatTime(activity.created_at)}</span>
+                          <div className={`w-1.5 h-1.5 rounded-full ${dotColors[activity.action_type] || dotColors.default}`} />
+                          <span className="text-sm text-text-secondary">{activity.description || activity.action_type}</span>
+                        </motion.div>
+                      )
+                    }) : (
                       <p className="text-sm text-text-tertiary">暂无活动记录</p>
                     )}
                   </div>
