@@ -1,32 +1,38 @@
 """
-Calibration API — 用户校准机制
+Calibration API — Persistent user calibration mechanism.
 
-允许用户测试和精调在线状态的回复风格。
-用户给出一个场景 → 系统生成回复 → 用户提供"真实回复" → 
-系统对比差异并生成精调建议 → 可选地更新 system prompt。
+Allows users to test and refine the clone's reply style.
+Test records and refinements are persisted for version history.
 """
+
+from __future__ import annotations
 
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select, desc
 
 from app.dependencies import get_db, get_current_user_id
 from app.ai.llm_client import llm_client
 from app.ai.clone_engine.response_generator import ResponseGenerator
+from app.ai.utils import safe_parse_json
+from app.models.clone_profile import CloneProfile
+from app.models.calibration_test import CalibrationTest
+from app.models.calibration_refinement import CalibrationRefinement
 
 router = APIRouter()
 
 
 class CalibrationTestRequest(BaseModel):
-    scenario: str  # 场景描述，如"对方说：今天好累啊，想你了"
-    conversation_context: list[dict] | None = None  # 可选的上下文消息
+    scenario: str
+    conversation_context: list[dict] | None = None
 
 
 class CalibrationFeedbackRequest(BaseModel):
     scenario: str
     generated_response: str
-    user_response: str  # 用户认为的真实回复
-    issues: list[str] | None = None  # 用户指出的问题
+    user_response: str
+    issues: list[str] | None = None
 
 
 class CalibrationRefineRequest(BaseModel):
@@ -39,17 +45,15 @@ async def test_generated_response(
     user_id: str = Depends(get_current_user_id),
     db: AsyncSession = Depends(get_db),
 ):
-    """Test how the online state would respond to a given scenario"""
-    from sqlalchemy import select
-    from app.models.clone_profile import CloneProfile
-
-    result = await db.execute(select(CloneProfile).where(CloneProfile.user_id == user_id))
+    """Test how the online state would respond to a given scenario."""
+    result = await db.execute(
+        select(CloneProfile).where(CloneProfile.user_id == user_id)
+    )
     profile = result.scalar_one_or_none()
     if not profile:
         return {"error": "No clone profile found. Complete onboarding first."}
 
     generator = ResponseGenerator()
-    
     response = await generator.generate(
         system_prompt=profile.system_prompt,
         conversation_history=req.conversation_context or [],
@@ -70,17 +74,29 @@ async def submit_calibration_feedback(
     user_id: str = Depends(get_current_user_id),
     db: AsyncSession = Depends(get_db),
 ):
-    """Submit user feedback on generated response vs real response"""
-    from sqlalchemy import select
-    from app.models.clone_profile import CloneProfile
+    """Submit user feedback on generated response vs real response."""
+    import uuid
 
-    result = await db.execute(select(CloneProfile).where(CloneProfile.user_id == user_id))
+    result = await db.execute(
+        select(CloneProfile).where(CloneProfile.user_id == user_id)
+    )
     profile = result.scalar_one_or_none()
     if not profile:
         return {"error": "No clone profile found."}
 
-    # Use LLM to analyze the gap between clone response and user response
     analysis = await _analyze_gap(req.scenario, req.generated_response, req.user_response)
+
+    # Persist test record
+    test_record = CalibrationTest(
+        user_id=uuid.UUID(user_id),
+        profile_version=profile.version,
+        scenario=req.scenario,
+        generated_response=req.generated_response,
+        user_response=req.user_response,
+        analysis=analysis,
+    )
+    db.add(test_record)
+    await db.commit()
 
     return {
         "analysis": analysis,
@@ -95,34 +111,96 @@ async def refine_system_prompt(
     user_id: str = Depends(get_current_user_id),
     db: AsyncSession = Depends(get_db),
 ):
-    """Refine the system prompt based on multiple calibration tests"""
-    from sqlalchemy import select
-    from app.models.clone_profile import CloneProfile
+    """Refine the system prompt based on multiple calibration tests and persist."""
+    import uuid
 
-    result = await db.execute(select(CloneProfile).where(CloneProfile.user_id == user_id))
+    result = await db.execute(
+        select(CloneProfile).where(CloneProfile.user_id == user_id)
+    )
     profile = result.scalar_one_or_none()
     if not profile:
         return {"error": "No clone profile found."}
 
-    # Build refinement prompt from all test results
     refinement = await _generate_refinement(
         profile.system_prompt,
         req.test_results,
     )
 
-    # Optionally update the system prompt
-    # profile.system_prompt = refinement.get("refined_prompt", profile.system_prompt)
-    # await db.commit()
+    refined_prompt = refinement.get("refined_prompt", profile.system_prompt)
+
+    # Persist refinement record
+    refinement_record = CalibrationRefinement(
+        user_id=uuid.UUID(user_id),
+        profile_version=profile.version,
+        previous_prompt=profile.system_prompt,
+        refined_prompt=refined_prompt,
+        changes_made=refinement.get("changes_made", []),
+        confidence=refinement.get("confidence", 0),
+    )
+    db.add(refinement_record)
+
+    # Actually update the profile
+    profile.system_prompt = refined_prompt
+    profile.version += 1
+    await db.commit()
 
     return {
-        "refined_prompt": refinement.get("refined_prompt", ""),
+        "refined_prompt": refined_prompt,
         "changes_made": refinement.get("changes_made", []),
         "confidence": refinement.get("confidence", 0),
+        "new_version": profile.version,
+    }
+
+
+@router.get("/history")
+async def get_calibration_history(
+    user_id: str = Depends(get_current_user_id),
+    db: AsyncSession = Depends(get_db),
+    limit: int = 20,
+):
+    """Get calibration test history for the user."""
+    import uuid
+
+    result = await db.execute(
+        select(CalibrationTest)
+        .where(CalibrationTest.user_id == uuid.UUID(user_id))
+        .order_by(desc(CalibrationTest.created_at))
+        .limit(limit)
+    )
+    tests = result.scalars().all()
+
+    refinements_result = await db.execute(
+        select(CalibrationRefinement)
+        .where(CalibrationRefinement.user_id == uuid.UUID(user_id))
+        .order_by(desc(CalibrationRefinement.created_at))
+        .limit(limit)
+    )
+    refinements = refinements_result.scalars().all()
+
+    return {
+        "tests": [
+            {
+                "id": str(t.id),
+                "scenario": t.scenario,
+                "overall_match": t.analysis.get("overall_match", 0) if t.analysis else 0,
+                "created_at": t.created_at.isoformat() if t.created_at else None,
+            }
+            for t in tests
+        ],
+        "refinements": [
+            {
+                "id": str(r.id),
+                "version": r.profile_version,
+                "confidence": r.confidence,
+                "changes_count": len(r.changes_made or []),
+                "created_at": r.created_at.isoformat() if r.created_at else None,
+            }
+            for r in refinements
+        ],
     }
 
 
 async def _analyze_gap(scenario: str, generated_response: str, user_response: str) -> dict:
-    """Use LLM to analyze the stylistic gap between generated and user response"""
     prompt = f"""你是一个风格分析专家。请对比以下两个回复，分析系统生成回复与用户真实回复的差异。
 
 场景：{scenario}
@@ -156,24 +234,12 @@ async def _analyze_gap(scenario: str, generated_response: str, user_response: st
         messages=[{"role": "user", "content": prompt}],
         temperature=0.2,
         max_tokens=2000,
+        task_type="calibration_analysis",
     )
-
-    import json
-    text = response.strip()
-    if text.startswith("```json"):
-        text = text[7:]
-    if text.startswith("```"):
-        text = text[3:]
-    if text.endswith("```"):
-        text = text[:-3]
-
-    return json.loads(text.strip())
+    return safe_parse_json(response, default={})
 
 
 async def _generate_refinement(current_prompt: str, test_results: list) -> dict:
-    """Generate a refined system prompt based on calibration feedback"""
-    
-    # Build feedback summary
     feedback_summary = []
     for i, tr in enumerate(test_results):
         feedback_summary.append(f"""测试 {i+1}:
@@ -213,15 +279,6 @@ async def _generate_refinement(current_prompt: str, test_results: list) -> dict:
         messages=[{"role": "user", "content": prompt}],
         temperature=0.3,
         max_tokens=4000,
+        task_type="calibration_refinement",
     )
-
-    import json
-    text = response.strip()
-    if text.startswith("```json"):
-        text = text[7:]
-    if text.startswith("```"):
-        text = text[3:]
-    if text.endswith("```"):
-        text = text[:-3]
-
-    return json.loads(text.strip())
+    return safe_parse_json(response, default={})

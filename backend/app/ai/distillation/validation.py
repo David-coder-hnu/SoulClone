@@ -5,9 +5,8 @@ DistillationValidator — 蒸馏质量验证器
 不合格则要求补充数据采集。
 """
 
-import json
-
 from app.ai.llm_client import llm_client
+from app.ai.utils import safe_parse_json
 
 
 VALIDATION_PROMPT = """你是 SoulClone 的克隆体质检员。你需要验证以下 system prompt 是否能精确复刻目标用户。
@@ -69,17 +68,10 @@ class DistillationValidator:
             messages=[{"role": "user", "content": prompt}],
             temperature=0.2,
             max_tokens=3000,
+            task_type="validation",
         )
 
-        text = response.strip()
-        if text.startswith("```json"):
-            text = text[7:]
-        if text.startswith("```"):
-            text = text[3:]
-        if text.endswith("```"):
-            text = text[:-3]
-
-        return json.loads(text.strip())
+        return safe_parse_json(response, default={})
 
     def is_passing(self, validation_result: dict, threshold: float = 85.0) -> bool:
         """Check if validation passes the quality threshold"""

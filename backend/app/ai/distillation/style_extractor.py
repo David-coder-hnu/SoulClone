@@ -9,7 +9,10 @@ import json
 import re
 from collections import Counter
 
+import jieba
+
 from app.ai.llm_client import llm_client
+from app.ai.utils import safe_parse_json
 
 
 class StyleExtractor:
@@ -54,10 +57,18 @@ class StyleExtractor:
             "tilde": all_text.count("~"),
         }
         
-        # Vocabulary richness
-        words = re.findall(r'\b\w+\b', all_text)
+        # Vocabulary richness — use jieba for Chinese tokenization
+        words = list(jieba.cut(all_text))
+        words = [w for w in words if w.strip() and len(w) > 1]
         unique_words = set(words)
         vocab_richness = len(unique_words) / max(len(words), 1)
+
+        # Signature words (most frequent content words, excluding stopwords)
+        _stopwords = set([
+            "的", "了", "是", "我", "你", "在", "和", "就", "不", "人", "有", "都", "一个", "上", "也", "很", "到", "说", "要", "去", "可以", "会", "着", "没有", "看", "好", "自己", "这", "吗", "呢", "吧", "啊", "哦", "嗯", "哈",
+        ])
+        content_words = [w for w in words if w not in _stopwords]
+        top_words = [w for w, _ in Counter(content_words).most_common(10)]
         
         return {
             "avg_message_length": round(avg_length, 1),
@@ -68,6 +79,7 @@ class StyleExtractor:
             "top_emojis": top_emojis,
             "punctuation_profile": punct_counts,
             "vocabulary_richness": round(vocab_richness, 3),
+            "top_signature_words": top_words,
         }
 
     async def extract(self, chat_samples: list[str]) -> dict:
@@ -115,14 +127,7 @@ class StyleExtractor:
             messages=[{"role": "user", "content": prompt}],
             temperature=0.3,
             max_tokens=2000,
+            task_type="style_extraction",
         )
 
-        text = response.strip()
-        if text.startswith("```json"):
-            text = text[7:]
-        if text.startswith("```"):
-            text = text[3:]
-        if text.endswith("```"):
-            text = text[:-3]
-
-        return json.loads(text.strip())
+        return safe_parse_json(response, default={})

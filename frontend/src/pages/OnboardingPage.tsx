@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Upload, MessageSquare, Brain, Sparkles, ChevronRight, Loader2, AlertCircle, CheckCircle, RefreshCw } from 'lucide-react'
 import { api } from '@/lib/api'
+import { useDistillationProgress } from '@/hooks/useDistillationProgress'
 import AnimatedBackground from '@/components/shared/AnimatedBackground'
 
 const questions = [
@@ -28,6 +29,17 @@ interface ValidationResult {
   critical_gaps: string[]
 }
 
+const STEP_LABELS: Record<string, string> = {
+  queued: '排队中...',
+  distilling_persona: '提取人格核心...',
+  extracting_style: '分析聊天 DNA（句法、emoji、标点）...',
+  forging_prompt: '锻造个性化回复引擎...',
+  validating: '多轮验证与校准...',
+  persisting: '保存数据...',
+  completed: '完成',
+  failed: '失败',
+}
+
 export default function OnboardingPage() {
   const [step, setStep] = useState<'questionnaire' | 'samples' | 'distilling' | 'complete'>('questionnaire')
   const [currentQ, setCurrentQ] = useState(0)
@@ -36,7 +48,10 @@ export default function OnboardingPage() {
   const [progress, setProgress] = useState(0)
   const [distillError, setDistillError] = useState('')
   const [validationResult, setValidationResult] = useState<ValidationResult | null>(null)
+  const [jobId, setJobId] = useState<string | null>(null)
   const navigate = useNavigate()
+
+  const { progress: sseProgress } = useDistillationProgress(jobId)
 
   const handleAnswer = (answer: string) => {
     setAnswers((prev) => ({ ...prev, [questions[currentQ].id]: answer }))
@@ -52,6 +67,29 @@ export default function OnboardingPage() {
   const removeChatSample = (index: number) => setChatSamples((prev) => prev.filter((_, i) => i !== index))
   const getTotalChars = () => chatSamples.reduce((sum, s) => sum + s.length, 0)
 
+  // Sync SSE progress to local progress
+  useEffect(() => {
+    if (!sseProgress) return
+    setProgress(sseProgress.percent)
+    if (sseProgress.status === 'completed') {
+      setStep('complete')
+      if (sseProgress.overall_score) {
+        setValidationResult({
+          consistency_score: Math.round(sseProgress.overall_score),
+          stability_score: Math.round(sseProgress.overall_score),
+          safety_score: Math.round(sseProgress.overall_score),
+          plausibility_score: Math.round(sseProgress.overall_score),
+          critical_gaps: [],
+        })
+      }
+    }
+    if (sseProgress.status === 'failed') {
+      setDistillError(sseProgress.error || '创建失败，请重试')
+      setStep('samples')
+      setJobId(null)
+    }
+  }, [sseProgress])
+
   const startDistillation = async () => {
     const validSamples = chatSamples.filter((s) => s.trim().length > 10)
     if (validSamples.length === 0) {
@@ -60,7 +98,7 @@ export default function OnboardingPage() {
     }
     setStep('distilling')
     setDistillError('')
-    setProgress(0)
+    setProgress(5)
 
     try {
       const res = await api.post('/distillation/start', {
@@ -69,26 +107,22 @@ export default function OnboardingPage() {
         social_import: null,
       })
       const data = res.data
-      if (data.validation) setValidationResult(data.validation)
-
-      for (let i = 0; i <= 60; i++) {
-        setProgress(Math.min(i * 1.6, 99))
-        await new Promise((r) => setTimeout(r, 1000))
-        try {
-          const statusRes = await api.get('/distillation/status')
-          if (statusRes.data.is_activated) {
-            setProgress(100)
-            setStep('complete')
-            return
-          }
-        } catch { /* continue polling */ }
+      if (data.job_id) {
+        setJobId(data.job_id)
       }
-      setProgress(100)
-      setStep('complete')
+      if (data.validation) setValidationResult(data.validation)
     } catch (err: any) {
       setDistillError(err.response?.data?.detail || '创建失败，请重试')
       setStep('samples')
+      setJobId(null)
     }
+  }
+
+  const handleRetry = () => {
+    setDistillError('')
+    setJobId(null)
+    setProgress(0)
+    setStep('samples')
   }
 
   const handleComplete = () => navigate('/home')
@@ -295,23 +329,23 @@ export default function OnboardingPage() {
               <p className="text-accent-cyan font-mono text-sm mt-3">{Math.round(progress)}%</p>
 
               <div className="mt-8 space-y-2.5 text-sm text-text-secondary">
-                {[
-                  '提取人格核心...',
-                  '分析聊天 DNA（句法、emoji、标点）...',
-                  '深度语义风格分析...',
-                  '合成记忆种子与情感触发器...',
-                  '锻造个性化回复引擎...',
-                  '多轮验证与校准...',
-                ].map((text, i) => (
-                  <motion.p
-                    key={i}
-                    animate={{ opacity: progress > (i + 1) * 15 ? 1 : 0.3 }}
-                    className="transition-opacity"
-                  >
-                    {text}
-                  </motion.p>
-                ))}
+                <motion.p animate={{ opacity: 1 }} className="text-accent-cyan">
+                  {STEP_LABELS[sseProgress?.step || 'queued'] || '处理中...'}
+                </motion.p>
+                {sseProgress?.error && (
+                  <p className="text-accent-magenta">{sseProgress.error}</p>
+                )}
               </div>
+              {sseProgress?.status === 'failed' && (
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={handleRetry}
+                  className="mt-4 px-6 py-2 rounded-xl bg-bg-600 border border-white/10 text-text-primary hover:border-accent-cyan/50 transition-colors"
+                >
+                  重试
+                </motion.button>
+              )}
             </motion.div>
           )}
 

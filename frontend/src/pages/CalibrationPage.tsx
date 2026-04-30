@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { FlaskConical, Send, User, Bot, CheckCircle, RefreshCw, Sparkles, ArrowRight, Beaker } from 'lucide-react'
+import { FlaskConical, Send, User, Bot, CheckCircle, RefreshCw, Sparkles, ArrowRight, Beaker, History, Loader2, ChevronDown, ChevronUp } from 'lucide-react'
 import { api } from '@/lib/api'
 
 
@@ -28,6 +28,11 @@ const sampleScenarios = [
   '对方说：哈哈你上次说的那个笑死我了',
 ]
 
+interface CalibrationHistory {
+  tests: Array<{ id: string; scenario: string; overall_match: number; created_at: string }>
+  refinements: Array<{ id: string; version: number; confidence: number; changes_count: number; created_at: string }>
+}
+
 export default function CalibrationPage() {
   const [scenario, setScenario] = useState('')
   const [generatedResponse, setGeneratedResponse] = useState('')
@@ -36,6 +41,13 @@ export default function CalibrationPage() {
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [results, setResults] = useState<TestResult[]>([])
   const [currentAnalysis, setCurrentAnalysis] = useState<TestResult['analysis']>(null)
+  const [refinementResult, setRefinementResult] = useState<{
+    confidence: number
+    changes_made: string[]
+    new_version: number
+  } | null>(null)
+  const [history, setHistory] = useState<CalibrationHistory | null>(null)
+  const [showHistory, setShowHistory] = useState(false)
 
   const testStyle = async () => {
     if (!scenario.trim()) return
@@ -83,13 +95,31 @@ export default function CalibrationPage() {
           issues: r.analysis?.style_gaps?.map((g) => g.dimension) || [],
         })),
       })
-      alert(`精调完成！信心度: ${res.data.confidence}%\n修改项: ${res.data.changes_made?.length || 0} 条`)
+      setRefinementResult({
+        confidence: res.data.confidence,
+        changes_made: res.data.changes_made || [],
+        new_version: res.data.new_version,
+      })
+      fetchHistory()
     } catch (err: any) {
       console.error('Refine failed:', err)
     } finally {
       setIsLoading(false)
     }
   }
+
+  const fetchHistory = async () => {
+    try {
+      const res = await api.get('/calibration/history')
+      setHistory(res.data)
+    } catch (err) {
+      console.error('Failed to load history:', err)
+    }
+  }
+
+  useEffect(() => {
+    fetchHistory()
+  }, [])
 
   const getSeverityColor = (severity: string) => {
     switch (severity) {
@@ -318,6 +348,100 @@ export default function CalibrationPage() {
         </AnimatePresence>
 
         {/* Test History & Refine */}
+        {/* Refinement Result */}
+        <AnimatePresence>
+          {refinementResult && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              className="bg-bg-500 border border-white/[0.06] rounded-3xl p-6 mb-6"
+            >
+              <div className="flex items-center gap-2 mb-4">
+                <CheckCircle size={18} className="text-accent-cyan" />
+                <span className="font-medium">精调完成</span>
+                <span className="text-text-ghost text-sm ml-auto">版本 v{refinementResult.new_version}</span>
+              </div>
+              <p className="text-text-secondary text-sm mb-3">
+                信心度: <span className="text-accent-cyan font-bold">{refinementResult.confidence}%</span>
+                ，共 {refinementResult.changes_made.length} 项修改
+              </p>
+              <div className="space-y-2">
+                {refinementResult.changes_made.map((change, i) => (
+                  <div key={i} className="text-sm text-text-secondary p-2 rounded-lg bg-bg-600">
+                    · {change}
+                  </div>
+                ))}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* History */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="bg-bg-500 border border-white/[0.06] rounded-3xl p-6 mb-6"
+        >
+          <button
+            onClick={() => setShowHistory(!showHistory)}
+            className="flex items-center justify-between w-full"
+          >
+            <div className="flex items-center gap-2">
+              <History size={16} className="text-text-secondary" />
+              <span className="font-medium">校准历史</span>
+            </div>
+            {showHistory ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+          </button>
+
+          <AnimatePresence>
+            {showHistory && history && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                className="overflow-hidden"
+              >
+                {/* Tests */}
+                {history.tests.length > 0 && (
+                  <div className="mt-4">
+                    <p className="text-xs text-text-ghost mb-2">测试记录</p>
+                    <div className="space-y-2">
+                      {history.tests.map((t) => (
+                        <div key={t.id} className="flex items-center justify-between p-2 rounded-lg bg-bg-600 text-sm">
+                          <span className="text-text-secondary truncate max-w-[200px]">{t.scenario}</span>
+                          <span className={`font-medium ${t.overall_match >= 80 ? 'text-accent-cyan' : t.overall_match >= 60 ? 'text-accent-gold' : 'text-accent-magenta'}`}>
+                            {t.overall_match}%
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Refinements */}
+                {history.refinements.length > 0 && (
+                  <div className="mt-4">
+                    <p className="text-xs text-text-ghost mb-2">精调版本</p>
+                    <div className="space-y-2">
+                      {history.refinements.map((r) => (
+                        <div key={r.id} className="flex items-center justify-between p-2 rounded-lg bg-bg-600 text-sm">
+                          <span className="text-text-secondary">版本 v{r.version}</span>
+                          <div className="flex items-center gap-3">
+                            <span className="text-text-ghost">{r.changes_count} 项修改</span>
+                            <span className="text-accent-cyan font-medium">{r.confidence}% 信心</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </motion.div>
+
+        {/* Current Session Results */}
         {results.length > 0 && (
           <motion.div
             initial={{ opacity: 0 }}
@@ -325,7 +449,7 @@ export default function CalibrationPage() {
             className="bg-bg-500 border border-white/[0.06] rounded-3xl p-6 mb-6"
           >
             <div className="flex items-center justify-between mb-4">
-              <span className="font-medium">已完成的测试 ({results.length})</span>
+              <span className="font-medium">本次测试 ({results.length})</span>
               <span className="text-text-ghost text-sm">
                 平均匹配度: {Math.round(results.reduce((s, r) => s + (r.analysis?.overall_match || 0), 0) / results.length)}%
               </span>
@@ -361,7 +485,7 @@ export default function CalibrationPage() {
                 disabled={isLoading}
                 className="w-full h-12 rounded-full bg-gradient-to-r from-accent-gold to-accent-magenta text-white font-semibold transition-all duration-150 ease-spring hover:shadow-lg hover:shadow-accent-gold/30 disabled:opacity-50 flex items-center justify-center gap-2 glow-gold-md hover:glow-gold-lg"
               >
-                <ArrowRight size={18} />
+                {isLoading ? <Loader2 size={18} className="animate-spin" /> : <ArrowRight size={18} />}
                 基于 {results.length} 次测试精调风格
               </motion.button>
             )}

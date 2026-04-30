@@ -5,7 +5,7 @@ export interface AvatarProps extends React.HTMLAttributes<HTMLDivElement> {
   src?: string
   alt?: string
   size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl'
-  status?: 'online' | 'offline' | 'away' | 'ai-twin-online' | 'ai-twin-busy'
+  status?: 'online' | 'offline' | 'away' | 'ai-twin-online' | 'ai-twin-offline' | 'ai-twin-busy'
   ring?: 'none' | 'cyan' | 'magenta' | 'gold' | 'gradient'
   fallback?: React.ReactNode
 }
@@ -31,6 +31,7 @@ const statusStyles = {
   offline: 'hidden',
   away: 'bg-warning border-2 border-bg-200',
   'ai-twin-online': 'bg-cyan-400 animate-[breathe_2s_ease-in-out_infinite]',
+  'ai-twin-offline': 'bg-gray-500',
   'ai-twin-busy': 'bg-magenta-400 animate-pulse',
 }
 

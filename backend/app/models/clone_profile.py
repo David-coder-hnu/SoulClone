@@ -47,5 +47,10 @@ class CloneProfile(Base, UUIDMixin, TimestampMixin):
         DateTime(timezone=True), nullable=True
     )
 
+    # Versioning & metadata
+    version: Mapped[int] = mapped_column(Integer, default=1)
+    distillation_meta: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
+    model_version: Mapped[str | None] = mapped_column(String(50), nullable=True)
+
     user: Mapped["User"] = relationship("User", back_populates="clone_profile")
     clone: Mapped["Clone"] = relationship("Clone", back_populates="profile")
