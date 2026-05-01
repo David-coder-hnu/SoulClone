@@ -63,7 +63,7 @@ export default function RegisterPage() {
             >
               <Sparkles size={28} className="text-white" />
             </motion.div>
-            <h1 className="font-sans text-2xl font-bold mb-1">创建账号</h1>
+            <h1 className="font-heading text-2xl mb-1">创建账号</h1>
             <p className="text-text-secondary text-sm">开启你的数字孪生之旅</p>
           </div>
 

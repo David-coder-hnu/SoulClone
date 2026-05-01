@@ -15,7 +15,7 @@ export default function AgentAvatar({ name, color = 'cyan' }: { name: string; co
         animate={{ y: [0, -5, 0] }}
         transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
       >
-        <span className="text-white font-display font-bold text-lg">{name[0]}</span>
+        <span className="text-white font-display text-lg">{name[0]}</span>
       </motion.div>
     </div>
   )

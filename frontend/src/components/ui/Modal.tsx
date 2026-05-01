@@ -28,7 +28,7 @@ export default function Modal({ isOpen, onClose, title, children }: ModalProps) 
           >
             {title && (
               <div className="flex items-center justify-between mb-4">
-                <h3 className="font-display text-lg font-bold">{title}</h3>
+                <h3 className="font-heading text-lg">{title}</h3>
                 <button onClick={onClose} className="text-text-ghost hover:text-text-primary">
                   <X size={20} />
                 </button>

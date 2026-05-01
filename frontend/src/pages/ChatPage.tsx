@@ -52,7 +52,7 @@ export default function ChatPage() {
             {/* Header */}
             <FadeIn>
               <div className="flex items-center justify-between mb-6">
-                <h1 className="font-sans text-2xl font-bold">消息</h1>
+                <h1 className="font-heading text-2xl">消息</h1>
                 <div className="flex gap-2">
                   {(['all', 'unread'] as const).map((f) => (
                     <button

@@ -63,7 +63,7 @@ export default function LoginPage() {
             >
               <Sparkles size={28} className="text-white" />
             </motion.div>
-            <h1 className="font-sans text-2xl font-bold mb-1">欢迎回来</h1>
+            <h1 className="font-heading text-2xl mb-1">欢迎回来</h1>
             <p className="text-text-secondary text-sm">登录你的 SoulClone 账号</p>
           </div>
 

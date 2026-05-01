@@ -63,7 +63,7 @@ export default function DiscoverPage() {
           {/* Header */}
           <FadeIn>
             <div className="flex items-center justify-between mb-6">
-              <h1 className="font-sans text-2xl font-bold">发现</h1>
+              <h1 className="font-heading text-2xl">发现</h1>
               <span className="text-xs text-text-tertiary">剩余 {remaining} 位</span>
             </div>
           </FadeIn>

@@ -124,7 +124,7 @@ export default function NeuralWeaving({ className }: { className?: string }) {
                 <p className="mb-2 font-mono text-xs uppercase tracking-widest" style={{ color: node.color }}>
                   {node.subtitle}
                 </p>
-                <h3 className="mb-4 font-display text-3xl font-bold text-white md:text-4xl">
+                <h3 className="mb-4 font-heading text-3xl text-white md:text-4xl">
                   {node.title}
                 </h3>
                 <p className="max-w-md text-base leading-relaxed text-white/60">

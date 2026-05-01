@@ -316,7 +316,7 @@ export default function OnboardingPage() {
                 </div>
               </div>
 
-              <h2 className="font-sans text-2xl font-bold mb-2">正在深度创建...</h2>
+              <h2 className="font-heading text-2xl mb-2">正在深度创建...</h2>
               <p className="text-text-secondary mb-6">正在分析你的人格特征和聊天风格</p>
 
               <div className="h-2.5 bg-surface rounded-full overflow-hidden">

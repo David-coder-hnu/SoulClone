@@ -96,7 +96,7 @@ export default function ClonePage() {
           {/* Header */}
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h1 className="font-sans text-2xl font-bold">克隆仪表板</h1>
+              <h1 className="font-heading text-2xl">克隆仪表板</h1>
               <p className="text-text-secondary text-sm mt-0.5">管理你的 AI 数字孪生</p>
             </div>
           </div>

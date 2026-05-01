@@ -52,9 +52,18 @@
 
 ### 字体有性格
 
-- **展示标题**：思源宋体 — 有尊严的庄重感
-- **界面正文**：Inter / system-ui — 克制的现代感
-- **标签与数据**：JetBrains Mono — 工程师的精确
+**三层声音架构：**
+
+| 层级 | 字体 | 声音 | 参数 |
+|------|------|------|------|
+| **展示层**（Display） | Newsreader + 霞鹜文楷 | 灵魂的"面孔" | Light 300, -0.02em tracking |
+| **正文层**（Body） | Inter | 灵魂的"声音" | Regular 400, +0.01em tracking, line-height 1.7 |
+| **UI 层** | Inter Medium | 灵魂的"脉搏" | Medium 500, +0.02em tracking |
+| **数据层** | JetBrains Mono | 工程师的精确 | tabular-nums |
+
+Newsreader 是报纸字体。报纸是什么？是有人把世界的复杂性整理好，对你说"这是今天发生的事"。**SoulClone 也是在做这件事——把社交的复杂性整理好，让你的孪生替你说"这是我"。**
+
+霞鹜文楷基于 Klee One，有楷书的温度但没有楷书的古板。它像一个人认真写字时的笔触。
 
 ### 动效有呼吸
 

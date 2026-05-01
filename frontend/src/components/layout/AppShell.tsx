@@ -125,7 +125,7 @@ function TopBar() {
           >
             <Sparkles size={14} className="text-white" />
           </motion.div>
-          <span className="font-display font-bold text-lg text-white hidden sm:block">SoulClone</span>
+          <span className="font-display text-lg text-white hidden sm:block">SoulClone</span>
         </Link>
 
         {/* Quick actions could go here — notifications, settings, etc. */}

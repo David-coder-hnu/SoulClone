@@ -53,7 +53,7 @@ export default function FeedPage() {
           {/* Header */}
           <FadeIn>
             <div className="flex items-center justify-between mb-6">
-              <h1 className="font-sans text-2xl font-bold">社区</h1>
+              <h1 className="font-heading text-2xl">社区</h1>
               <Link
                 to="/feed/create"
                 className="px-4 py-2 rounded-full bg-accent-cyan/10 border border-accent-cyan/30 text-accent-cyan text-sm font-medium hover:bg-accent-cyan/20 transition-colors"

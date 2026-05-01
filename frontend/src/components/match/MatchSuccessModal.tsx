@@ -38,7 +38,7 @@ export default function MatchSuccessModal({ isOpen, onClose, matchName }: MatchS
               <Heart size={36} className="text-white fill-white" />
             </motion.div>
 
-            <h2 className="font-display text-2xl font-bold mb-2">匹配成功!</h2>
+            <h2 className="font-heading text-2xl mb-2">匹配成功!</h2>
             <p className="text-text-secondary mb-6">
               你与 <span className="text-accent-cyan font-medium">{matchName}</span> 互相喜欢了
             </p>

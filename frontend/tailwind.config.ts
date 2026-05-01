@@ -49,10 +49,17 @@ export default {
         info: '#00F0FF',
       },
       fontFamily: {
-        display: ['Sora', 'Noto Serif SC', 'PingFang SC', 'Microsoft YaHei', 'serif'],
-        heading: ['Noto Serif SC', 'Sora', 'PingFang SC', 'Microsoft YaHei', 'serif'],
+        /* Soul Type — Three-Voice Architecture (§Typography) */
+        // Display: the "face" of the soul — high-contrast serif, editorial warmth
+        display: ['Newsreader', 'LXGW WenKai', 'Noto Serif SC', 'PingFang SC', 'Microsoft YaHei', 'serif'],
+        // Heading: structured elegance — same family, different weight
+        heading: ['Newsreader', 'LXGW WenKai', 'Noto Serif SC', 'PingFang SC', 'Microsoft YaHei', 'serif'],
+        // Body: the "voice" — clear, breathing, modern
         body: ['Inter', 'PingFang SC', 'Microsoft YaHei', 'sans-serif'],
-        mono: ['JetBrains Mono', 'monospace'],
+        // UI: precise but gentle — Medium weight, slightly tracked out
+        ui: ['Inter', 'PingFang SC', 'Microsoft YaHei', 'system-ui', 'sans-serif'],
+        // Mono: the "pulse" — engineer's precision
+        mono: ['JetBrains Mono', 'LXGW WenKai Mono', 'monospace'],
       },
       transitionTimingFunction: {
         'out-expo': 'cubic-bezier(0.16, 1, 0.3, 1)',

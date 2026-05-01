@@ -59,7 +59,7 @@ export default function HomePage() {
           <FadeIn>
             <div className="flex items-center justify-between mb-8">
               <div>
-                <h1 className="font-sans text-xl md:text-2xl font-bold">
+                <h1 className="font-heading text-xl md:text-2xl">
                   {stats?.status === 'active'
                     ? <>你的孪生今天替你回复了 <span className="text-accent-cyan font-mono">{stats.total_messages_sent || 0}</span> 条消息</>
                     : <>你好, <span className="text-accent-cyan">{user?.nickname || '探索者'}</span></>}

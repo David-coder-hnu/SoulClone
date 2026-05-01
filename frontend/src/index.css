@@ -17,26 +17,79 @@
     background-color: #050508;
     color: #e8e8ec;
     overflow-x: hidden;
-    line-height: 1.6;
-    letter-spacing: 0.01em;
+    line-height: 1.7;          /* 1.7 for Chinese breathing room */
+    letter-spacing: 0.01em;    /* micro relaxation, like a pause in speech */
     font-optical-sizing: auto;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
 
-  /* Display font for English, Serif for Chinese — design aesthetic */
+  /* ═════════ Soul Type — Three-Voice Typography System ═════════ */
+
+  /* Display: the "face" of the soul — Light, tightened, like a whisper */
   .font-display {
-    font-family: 'Sora', 'Noto Serif SC', 'PingFang SC', 'Microsoft YaHei', serif;
-    letter-spacing: -0.02em;
+    font-family: 'Newsreader', 'LXGW WenKai', 'Noto Serif SC', 'PingFang SC', 'Microsoft YaHei', serif;
+    font-weight: 300;          /* Light — like breathing */
+    letter-spacing: -0.02em;   /* tightened, forming cohesion */
+    line-height: 1.1;
   }
 
-  /* Chinese heading font */
+  /* Heading: structured elegance — Regular, subtle tension */
   .font-heading {
-    font-family: 'Noto Serif SC', 'Sora', 'PingFang SC', 'Microsoft YaHei', serif;
+    font-family: 'Newsreader', 'LXGW WenKai', 'Noto Serif SC', 'PingFang SC', 'Microsoft YaHei', serif;
+    font-weight: 400;          /* Regular — elegant */
+    letter-spacing: -0.01em;
+    line-height: 1.3;
   }
 
-  h1, h2, h3, h4, h5, h6 {
+  /* Body: the "voice" — clear, breathing, modern */
+  .font-body {
+    font-family: 'Inter', 'PingFang SC', 'Microsoft YaHei', system-ui, sans-serif;
+    font-weight: 400;
+    letter-spacing: 0.01em;
+    line-height: 1.7;
+  }
+
+  /* UI: precise but gentle — Medium, tracked out for small sizes */
+  .font-ui {
+    font-family: 'Inter', 'PingFang SC', 'Microsoft YaHei', system-ui, sans-serif;
+    font-weight: 500;          /* Medium — heavier than Regular, lighter than Bold */
+    letter-spacing: 0.02em;    /* small text needs more air */
+  }
+
+  /* Soulful quote — serif italic, humanist */
+  .quote-soul {
+    font-family: 'Newsreader', 'LXGW WenKai', 'Noto Serif SC', 'PingFang SC', 'Microsoft YaHei', serif;
+    font-style: italic;
+    font-weight: 400;
+    font-size: 1.25rem;
+    line-height: 1.6;
+    color: rgba(232, 232, 236, 0.8);
+    border-left: 2px solid rgba(0, 240, 255, 0.3);
+    padding-left: 1.5rem;
+  }
+
+  /* ═════════ Rhythm System: breathing like music ═════════ */
+  h1 {
     text-wrap: balance;
+    margin-bottom: 2.5rem;     /* dramatic pause after display title */
+  }
+  h2 {
+    text-wrap: balance;
+    margin-bottom: 1.5rem;
+  }
+  h3, h4, h5, h6 {
+    text-wrap: balance;
+    margin-bottom: 0.75rem;
+  }
+  p {
+    margin-bottom: 1rem;       /* conversation-sized pause */
+  }
+
+  /* English within Chinese display: needs more tightening */
+  h1 em, h2 em, .font-display em {
+    letter-spacing: -0.03em;
+    font-feature-settings: "kern" 1;
   }
 
   ::selection {

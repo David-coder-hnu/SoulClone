@@ -99,7 +99,7 @@ export default function EchoesTorus() {
         transition={{ duration: 0.8, delay: 0.2 }}
         className="relative z-10 mb-4 text-center"
       >
-        <h2 className="font-display text-2xl font-bold text-white md:text-3xl">
+        <h2 className="font-heading text-2xl text-white md:text-3xl">
           准备好遇见<span className="text-accent-cyan">另一个自己</span>了吗？
         </h2>
       </motion.div>

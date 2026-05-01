@@ -80,7 +80,7 @@ export default function NeuralCard({ icon, title, desc, accent, index, className
       </motion.div>
 
       {/* Title */}
-      <h3 className="font-display text-xl font-bold mb-3 relative z-10 text-white">
+      <h3 className="font-heading text-xl mb-3 relative z-10 text-white">
         {title}
       </h3>
 

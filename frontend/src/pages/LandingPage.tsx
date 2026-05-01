@@ -166,7 +166,7 @@ export default function LandingPage() {
             </HeroBadge>
 
             <HeroTitle delay={0.4}>
-              <h1 className="font-display text-5xl md:text-6xl lg:text-7xl font-bold mb-6 leading-[1.15] tracking-tight drop-shadow-[0_2px_24px_rgba(0,0,0,0.6)]">
+              <h1 className="font-display text-5xl md:text-6xl lg:text-7xl mb-6 leading-[1.15] tracking-tight drop-shadow-[0_2px_24px_rgba(0,0,0,0.6)]">
                 <ScanLight>你的灵魂</ScanLight>
                 <br />
                 <span className="text-accent-cyan">不止一个容器</span>
@@ -228,7 +228,7 @@ export default function LandingPage() {
             data-framer-initial
           >
             <p className="text-accent-cyan text-xs font-mono uppercase tracking-[0.2em] mb-4">Core Capabilities</p>
-            <h2 className="font-display text-4xl md:text-5xl font-bold mb-4">
+            <h2 className="font-display text-4xl md:text-5xl mb-4">
               探索<span className="text-accent-cyan">无限可能</span>
             </h2>
             <p className="text-text-secondary max-w-md text-base">
@@ -290,7 +290,7 @@ export default function LandingPage() {
             data-framer-initial
           >
             <p className="text-accent-cyan text-xs font-mono uppercase tracking-[0.2em] mb-4">Protocol Matrix</p>
-            <h2 className="font-display text-4xl md:text-5xl font-bold mb-4 tracking-tight">
+            <h2 className="font-display text-4xl md:text-5xl mb-4 tracking-tight">
               核心<span className="text-accent-cyan">协议</span>
             </h2>
             <p className="text-text-secondary max-w-md text-base">
