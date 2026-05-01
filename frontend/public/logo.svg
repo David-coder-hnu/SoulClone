@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none">
+  <defs>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="2.5" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Left drop: Cyan — larger, apex upward, the "you" -->
+  <path d="M 38 18
+           C 24 22, 18 38, 20 52
+           C 22 68, 34 76, 44 70
+           C 50 66, 52 56, 48 46
+           C 44 34, 44 22, 38 18 Z"
+        stroke="#00f0ff"
+        stroke-width="2.2"
+        stroke-linejoin="round"
+        fill="rgba(0,240,255,0.06)"
+        filter="url(#glow)"/>
+
+  <!-- Right drop: Magenta — smaller, lower, apex rightward, the "twin" -->
+  <path d="M 62 30
+           C 52 32, 48 46, 50 58
+           C 52 72, 62 76, 70 70
+           C 78 64, 78 54, 74 46
+           C 70 38, 68 28, 62 30 Z"
+        stroke="#ff006e"
+        stroke-width="2"
+        stroke-linejoin="round"
+        fill="rgba(255,0,110,0.06)"
+        filter="url(#glow)"/>
+
+  <!-- Convergence core: Gold ellipse — the shared soul -->
+  <ellipse cx="50" cy="60"
+           rx="5.5" ry="4.5"
+           fill="#ffbe0b"
+           filter="url(#glow)"/>
+
+  <!-- Inner seed: White pupil -->
+  <ellipse cx="50" cy="60"
+           rx="2" ry="1.6"
+           fill="#ffffff"/>
+</svg>

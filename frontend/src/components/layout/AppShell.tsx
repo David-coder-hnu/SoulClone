@@ -1,6 +1,7 @@
 import { useLocation, Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Home, Compass, MessageCircle, Newspaper, User, Sparkles } from 'lucide-react'
+import { Home, Compass, MessageCircle, Newspaper, User } from 'lucide-react'
+import Logo from '@/components/shared/Logo'
 import { cn } from '@/lib/utils'
 import { useState } from 'react'
 
@@ -118,12 +119,9 @@ function TopBar() {
       className="fixed top-0 left-0 right-0 z-40 px-4 md:px-8 py-4 glass border-b border-white/[0.04]"
     >
       <div className="flex items-center justify-between max-w-7xl mx-auto">
-        <Link to="/home" className="flex items-center gap-2 group">
-          <motion.div
-            whileHover={{ rotate: 10, scale: 1.05 }}
-            className="w-7 h-7 rounded-md bg-gradient-to-br from-accent-cyan to-accent-magenta flex items-center justify-center"
-          >
-            <Sparkles size={14} className="text-white" />
+        <Link to="/home" className="flex items-center gap-2.5 group">
+          <motion.div whileHover={{ rotate: 8, scale: 1.08 }} transition={{ type: 'spring', stiffness: 300 }}>
+            <Logo size={28} variant="color" animate="breathe" />
           </motion.div>
           <span className="font-display text-lg text-white hidden sm:block">SoulClone</span>
         </Link>

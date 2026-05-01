@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none">
+  <!-- Monochrome version: two drops + center dot -->
+  <!-- Left drop -->
+  <path d="M 38 18
+           C 24 22, 18 38, 20 52
+           C 22 68, 34 76, 44 70
+           C 50 66, 52 56, 48 46
+           C 44 34, 44 22, 38 18 Z"
+        stroke="currentColor"
+        stroke-width="4"
+        stroke-linejoin="round"
+        fill="none"/>
+
+  <!-- Right drop -->
+  <path d="M 62 30
+           C 52 32, 48 46, 50 58
+           C 52 72, 62 76, 70 70
+           C 78 64, 78 54, 74 46
+           C 70 38, 68 28, 62 30 Z"
+        stroke="currentColor"
+        stroke-width="4"
+        stroke-linejoin="round"
+        fill="none"/>
+
+  <!-- Center core -->
+  <circle cx="50" cy="60" r="4" fill="currentColor"/>
+</svg>
