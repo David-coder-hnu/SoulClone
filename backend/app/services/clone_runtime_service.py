@@ -39,7 +39,7 @@ class CloneRuntimeService:
                 Message.conversation_id.in_(
                     [r.get("conversation_id") for r in (clone.active_relationships or [])]
                 ),
-                Message.is_read is False,
+                Message.is_read.is_(False),
             )
         )
         state["pending_messages"] = [

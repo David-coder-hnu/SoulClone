@@ -16,6 +16,7 @@ import FeedPage from '@/pages/FeedPage'
 import ProfilePage from '@/pages/ProfilePage'
 import ClonePage from '@/pages/ClonePage'
 import CalibrationPage from '@/pages/CalibrationPage'
+import NotificationsPage from '@/pages/NotificationsPage'
 
 function App() {
   const { isAuthenticated } = useAuthStore()
@@ -40,6 +41,7 @@ function App() {
           <Route path="/profile" element={isAuthenticated ? <ProfilePage /> : <Navigate to="/login" />} />
           <Route path="/clone" element={isAuthenticated ? <ClonePage /> : <Navigate to="/login" />} />
           <Route path="/calibrate" element={isAuthenticated ? <CalibrationPage /> : <Navigate to="/login" />} />
+          <Route path="/notifications" element={isAuthenticated ? <NotificationsPage /> : <Navigate to="/login" />} />
         </Routes>
       </PageTransition>
     </div>

@@ -25,8 +25,11 @@ export default function LoginPage() {
     setError('')
     try {
       const res = await api.post('/auth/login', { phone, password })
+      const token = res.data.access_token
+      // Set auth first so the request interceptor can read the token
+      setAuth({ id: '', phone, nickname: '' }, token)
       const meRes = await api.get('/auth/me')
-      setAuth(meRes.data, res.data.access_token)
+      setAuth(meRes.data, token)
       if (meRes.data.status === 'distilling') {
         navigate('/onboarding')
       } else {

@@ -25,8 +25,11 @@ export default function RegisterPage() {
     setError('')
     try {
       const res = await api.post('/auth/register', { phone, password, nickname })
+      const token = res.data.access_token
+      // Set auth first so the request interceptor can read the token
+      setAuth({ id: '', phone, nickname }, token)
       const meRes = await api.get('/auth/me')
-      setAuth(meRes.data, res.data.access_token)
+      setAuth(meRes.data, token)
       navigate('/onboarding')
     } catch (err: any) {
       setError(err.response?.data?.detail || '注册失败')
