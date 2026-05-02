@@ -53,11 +53,10 @@ export default function ChatRoomPage() {
     setInput('')
     inputRef.current?.focus()
 
-    // Note: in production we'd use useMutation with optimistic updates.
-    // For simplicity we just POST and let the query refetch / WebSocket update.
+    // Backend saves the message and broadcasts via WebSocket.
+    // We only POST — no manual WS send, to avoid duplicates.
     try {
       await api.post(`/messages/${conversationId}`, { content })
-      sendWsMessage(content)
       playSound('send-message')
     } catch {
       // fallback: let user retry

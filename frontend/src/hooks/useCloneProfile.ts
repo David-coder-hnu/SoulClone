@@ -15,13 +15,20 @@ export interface CloneProfile {
   version: number
 }
 
-async function fetchCloneProfile(): Promise<CloneProfile> {
-  const { data } = await api.get('/distillation/profile')
-  return data
+async function fetchCloneProfile(): Promise<CloneProfile | null> {
+  try {
+    const { data } = await api.get('/distillation/profile')
+    return data
+  } catch (err: any) {
+    if (err.response?.status === 404) {
+      return null
+    }
+    throw err
+  }
 }
 
 export function useCloneProfile() {
-  return useQuery<CloneProfile>({
+  return useQuery<CloneProfile | null>({
     queryKey: ['clone-profile'],
     queryFn: fetchCloneProfile,
     staleTime: 1000 * 60 * 2,

@@ -53,15 +53,9 @@ async def _run_distillation(job_id: str, celery_self=None):
         job.started_at = datetime.now(timezone.utc)
         await db.commit()
 
-        # Retrieve input data from Redis (stashed by API before queuing)
-        input_key = f"distillation:input:{job_id}"
-        input_data = await redis_client.get(input_key)
-        if not input_data:
-            raise ValueError(f"Input data for job {job_id} not found in Redis")
-        import json
-        inputs = json.loads(input_data)
-
         service = DistillationService()
+
+        import json
 
         # Step progress helper
         async def set_progress(step: str, percent: int):
@@ -75,6 +69,13 @@ async def _run_distillation(job_id: str, celery_self=None):
             )
 
         try:
+            # Retrieve input data from Redis (stashed by API before queuing)
+            input_key = f"distillation:input:{job_id}"
+            input_data = await redis_client.get(input_key)
+            if not input_data:
+                raise ValueError(f"Input data for job {job_id} not found in Redis")
+            inputs = json.loads(input_data)
+
             await set_progress("distilling_persona", 20)
 
             result = await service.distill_user(
@@ -122,7 +123,9 @@ async def _run_distillation(job_id: str, celery_self=None):
             job.completed_at = datetime.now(timezone.utc)
             await db.commit()
 
-            user.status = "distillation_failed"
+            # Use a valid enum value — "suspended" is the closest to "failed"
+            # (distilling/active/suspended are the only allowed values)
+            user.status = "suspended"
             await db.commit()
 
             await redis_client.set(

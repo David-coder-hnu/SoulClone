@@ -13,6 +13,7 @@ import DiscoverPage from '@/pages/DiscoverPage'
 import ChatPage from '@/pages/ChatPage'
 import ChatRoomPage from '@/pages/ChatRoomPage'
 import FeedPage from '@/pages/FeedPage'
+import CreatePostPage from '@/pages/CreatePostPage'
 import ProfilePage from '@/pages/ProfilePage'
 import ClonePage from '@/pages/ClonePage'
 import CalibrationPage from '@/pages/CalibrationPage'
@@ -38,6 +39,7 @@ function App() {
           <Route path="/chat" element={isAuthenticated ? <ChatPage /> : <Navigate to="/login" />} />
           <Route path="/chat/:conversationId" element={isAuthenticated ? <ChatRoomPage /> : <Navigate to="/login" />} />
           <Route path="/feed" element={isAuthenticated ? <FeedPage /> : <Navigate to="/login" />} />
+          <Route path="/feed/create" element={isAuthenticated ? <CreatePostPage /> : <Navigate to="/login" />} />
           <Route path="/profile" element={isAuthenticated ? <ProfilePage /> : <Navigate to="/login" />} />
           <Route path="/clone" element={isAuthenticated ? <ClonePage /> : <Navigate to="/login" />} />
           <Route path="/calibrate" element={isAuthenticated ? <CalibrationPage /> : <Navigate to="/login" />} />

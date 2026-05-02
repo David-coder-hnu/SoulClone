@@ -5,7 +5,6 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
 from app.db.session import init_db
-from app.middleware.auth import AuthMiddleware
 from app.api.v1 import auth, users, distillation, clones, matches, conversations, messages, posts, feed, notifications, date_invites, calibration
 from app.websocket.manager import manager
 from app.websocket.chat_handler import ChatHandler
@@ -28,14 +27,11 @@ app = FastAPI(
 # CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.CORS_ORIGINS.split(","),
+    allow_origins=settings.cors_origins_list,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-# Auth middleware
-app.add_middleware(AuthMiddleware)
 
 # API routes
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["auth"])

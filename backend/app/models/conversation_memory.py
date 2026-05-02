@@ -8,13 +8,13 @@ from sqlalchemy import String, Text, DateTime, ForeignKey, Index
 from sqlalchemy import Uuid
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.models.base import Base, UUIDMixin
+from app.models.base import Base, UUIDMixin, TimestampMixin
 
 if TYPE_CHECKING:
     pass
 
 
-class ConversationMemory(Base, UUIDMixin):
+class ConversationMemory(Base, UUIDMixin, TimestampMixin):
     __tablename__ = "conversation_memories"
 
     clone_id: Mapped[uuid.UUID] = mapped_column(

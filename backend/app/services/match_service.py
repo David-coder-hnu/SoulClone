@@ -14,9 +14,16 @@ class MatchService:
 
     async def discover(self, user_id: str, limit: int = 10):
         """Discover potential matches for user"""
-        result = await self.db.execute(
-            select(User).where(User.id != user_id, User.status == "active")
-        )
+        from app.config import settings
+        # In dev mode include distilling users so the first user sees cards
+        if settings.is_development or settings.is_testing:
+            result = await self.db.execute(
+                select(User).where(User.id != user_id)
+            )
+        else:
+            result = await self.db.execute(
+                select(User).where(User.id != user_id, User.status == "active")
+            )
         users = result.scalars().all()
 
         items = []

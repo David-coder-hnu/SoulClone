@@ -17,3 +17,16 @@ celery_app.conf.update(
     task_track_started=True,
     task_time_limit=600,
 )
+
+# ── Development comfort settings ────────────────────────────────────────────
+# These ONLY apply when ENVIRONMENT=development. They reduce noise and
+# prevent the worker from becoming a maintenance burden for a solo dev.
+# ────────────────────────────────────────────────────────────────────────────
+if settings.is_development:
+    celery_app.conf.update(
+        worker_log_level="WARNING",      # Hide INFO spam
+        worker_max_tasks_per_child=50,   # Restart worker every 50 tasks (memory leak guard)
+        worker_prefetch_multiplier=1,    # Easier debugging
+        task_always_eager=False,         # Keep async; set True if you truly hate workers
+    )
+

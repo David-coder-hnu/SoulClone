@@ -40,8 +40,13 @@ class ChatHandler:
             content=content,
         )
 
-        # Broadcast to all participants (without exposing sender_type)
-        await manager.broadcast({
+        # Send only to conversation participants (privacy-safe)
+        conv = await self.chat_service.get_conversation(conversation_id)
+        recipient_ids = []
+        if conv:
+            recipient_ids = [str(conv.participant_a_id), str(conv.participant_b_id)]
+
+        await manager.send_to_users({
             "type": "message",
             "conversation_id": conversation_id,
             "message": {
@@ -50,7 +55,7 @@ class ChatHandler:
                 "content": content,
                 "created_at": msg.created_at.isoformat() if msg.created_at else None,
             },
-        })
+        }, recipient_ids)
 
         # Trigger clone reply if the other participant has an active clone
         await self._trigger_clone_reply_if_needed(conversation_id, user_id, content)
@@ -94,12 +99,18 @@ class ChatHandler:
             print(f"Clone reply failed: {e}")
 
     async def _handle_typing(self, user_id: str, data: dict):
-        await manager.broadcast({
+        conversation_id = data.get("conversation_id")
+        conv = await self.chat_service.get_conversation(conversation_id)
+        recipient_ids = []
+        if conv:
+            recipient_ids = [str(conv.participant_a_id), str(conv.participant_b_id)]
+
+        await manager.send_to_users({
             "type": "typing",
-            "conversation_id": data.get("conversation_id"),
+            "conversation_id": conversation_id,
             "user_id": user_id,
             "is_typing": data.get("is_typing", False),
-        })
+        }, recipient_ids)
 
     async def _handle_read_receipt(self, user_id: str, data: dict):
         pass

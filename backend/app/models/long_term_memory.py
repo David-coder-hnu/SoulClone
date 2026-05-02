@@ -8,13 +8,13 @@ from sqlalchemy import String, Text, Integer, Float, Boolean, DateTime, ForeignK
 from sqlalchemy import Uuid
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.models.base import Base, UUIDMixin
+from app.models.base import Base, UUIDMixin, TimestampMixin
 
 if TYPE_CHECKING:
     pass
 
 
-class LongTermMemory(Base, UUIDMixin):
+class LongTermMemory(Base, UUIDMixin, TimestampMixin):
     __tablename__ = "long_term_memories"
 
     clone_id: Mapped[uuid.UUID] = mapped_column(

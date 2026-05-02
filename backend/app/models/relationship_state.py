@@ -8,13 +8,13 @@ from sqlalchemy import String, Integer, Float, DateTime, ForeignKey, JSON
 from sqlalchemy import Uuid
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.models.base import Base, UUIDMixin
+from app.models.base import Base, UUIDMixin, TimestampMixin
 
 if TYPE_CHECKING:
     pass
 
 
-class RelationshipState(Base, UUIDMixin):
+class RelationshipState(Base, UUIDMixin, TimestampMixin):
     __tablename__ = "relationship_states"
 
     clone_id: Mapped[uuid.UUID] = mapped_column(

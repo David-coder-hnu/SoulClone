@@ -28,5 +28,12 @@ class ConnectionManager:
             for connection in connections:
                 await connection.send_json(message)
 
+    async def send_to_users(self, message: dict, user_ids: list[str]):
+        """Send a message only to specific users (privacy-safe)."""
+        for uid in user_ids:
+            if uid in self.active_connections:
+                for connection in self.active_connections[uid]:
+                    await connection.send_json(message)
+
 
 manager = ConnectionManager()

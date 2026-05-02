@@ -47,3 +47,26 @@ async def get_feed(
         }
         sanitized.append(p)
     return {"items": sanitized}
+
+
+@router.post("/posts")
+async def create_post(
+    content: str,
+    tags: list[str] | None = None,
+    user_id: uuid.UUID = Depends(get_current_user_id),
+    db: AsyncSession = Depends(get_db),
+):
+    """Create a new community post"""
+    service = FeedService(db)
+    post = await service.create_post(
+        author_id=str(user_id),
+        author_type="human",
+        content=content,
+        tags=tags or [],
+    )
+    return {
+        "id": str(post.id),
+        "content": post.content,
+        "tags": post.tags,
+        "created_at": post.created_at.isoformat() if post.created_at else None,
+    }

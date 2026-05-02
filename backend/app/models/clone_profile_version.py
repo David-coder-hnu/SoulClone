@@ -1,20 +1,19 @@
 from __future__ import annotations
 
 import uuid
-from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Integer, Text, DateTime, ForeignKey, JSON
+from sqlalchemy import Integer, Text, ForeignKey, JSON
 from sqlalchemy import Uuid
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.models.base import Base, UUIDMixin
+from app.models.base import Base, UUIDMixin, TimestampMixin
 
 if TYPE_CHECKING:
     pass
 
 
-class CloneProfileVersion(Base, UUIDMixin):
+class CloneProfileVersion(Base, UUIDMixin, TimestampMixin):
     __tablename__ = "clone_profile_versions"
 
     profile_id: Mapped[uuid.UUID] = mapped_column(
@@ -25,6 +24,3 @@ class CloneProfileVersion(Base, UUIDMixin):
     behavior_rules: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     distilled_persona: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     chat_dna: Mapped[dict | None] = mapped_column(JSON, nullable=True)
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), default=datetime.utcnow, nullable=False
-    )

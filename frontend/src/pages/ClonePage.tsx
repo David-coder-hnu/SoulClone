@@ -25,7 +25,7 @@ function formatTime(iso: string | null) {
 export default function ClonePage() {
   const navigate = useNavigate()
 
-  const { data: profile, isLoading: profileLoading } = useCloneProfile()
+  const { data: profile, isLoading: profileLoading, error: profileError } = useCloneProfile()
   const { data: stats, isLoading: statsLoading } = useCloneStats()
   const { data: activities, isLoading: activitiesLoading } = useCloneActivities()
 
@@ -83,6 +83,26 @@ export default function ClonePage() {
         <AmbientBackground variant="clone">
           <div className="flex items-center justify-center h-[60vh]">
             <Loader2 size={32} className="animate-spin text-accent-cyan" />
+          </div>
+        </AmbientBackground>
+      </AppShell>
+    )
+  }
+
+  // Empty state when no clone / profile exists yet
+  if (!profile && !stats && !profileError) {
+    return (
+      <AppShell>
+        <AmbientBackground variant="clone">
+          <div className="flex flex-col items-center justify-center h-[60vh] p-4 text-center">
+            <Sparkles size={48} className="text-accent-gold mb-4" />
+            <h2 className="font-heading text-xl mb-2">数字孪生尚未就绪</h2>
+            <p className="text-text-secondary text-sm max-w-md mb-6">
+              你还没有完成人格蒸馏。完成 onboarding 问卷后，系统会为你生成 AI 数字孪生。
+            </p>
+            <Button variant="primary" onClick={() => navigate('/home')}>
+              返回首页
+            </Button>
           </div>
         </AmbientBackground>
       </AppShell>

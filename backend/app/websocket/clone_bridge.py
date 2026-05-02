@@ -167,8 +167,8 @@ class CloneBridge:
             clone_id, conversation_id, "clone", response_text, other_user_id
         )
 
-        # 11. Broadcast
-        await manager.broadcast({
+        # 11. Send only to conversation participants (privacy-safe)
+        await manager.send_to_users({
             "type": "message",
             "conversation_id": conversation_id,
             "message": {
@@ -177,7 +177,7 @@ class CloneBridge:
                 "content": response_text,
                 "created_at": msg.created_at.isoformat() if msg.created_at else None,
             },
-        })
+        }, [user_id, other_user_id])
 
         # Update relationship intimacy (simple heuristic)
         if other_user_id:

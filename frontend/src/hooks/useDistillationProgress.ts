@@ -16,8 +16,9 @@ export function useDistillationProgress(jobId: string | null) {
   const startSSE = useCallback(() => {
     if (!jobId) return
 
+    // Use relative path so Vite dev proxy works correctly
     const eventSource = new EventSource(
-      `${import.meta.env.VITE_API_URL || '/api/v1'}/distillation/progress/sse?job_id=${jobId}`
+      `/api/v1/distillation/progress/sse?job_id=${jobId}`
     )
 
     eventSource.onopen = () => setIsConnected(true)

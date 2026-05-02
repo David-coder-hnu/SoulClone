@@ -6,7 +6,7 @@ import json
 
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -17,6 +17,7 @@ from app.services.distillation_service import DistillationService
 from app.core.redis_client import redis_client
 from app.models.distillation_job import DistillationJob
 from app.models.user import User
+from app.config import settings
 
 router = APIRouter()
 
@@ -28,6 +29,7 @@ router = APIRouter()
 @router.post("/start")
 async def start_distillation(
     data: DistillationInput,
+    background_tasks: BackgroundTasks,
     user_id: uuid.UUID = Depends(get_current_user_id),
     db: AsyncSession = Depends(get_db),
 ):
@@ -72,9 +74,21 @@ async def start_distillation(
         user.status = "distilling"
         await db.commit()
 
-    # Queue Celery task
-    from app.core.tasks import distill_user_task
-    distill_user_task.delay(str(job.id))
+    # Queue task
+    from app.core.tasks import distill_user_task, _run_distillation
+
+    if settings.is_development:
+        # Dev mode: no Celery worker needed. Runs in a background thread
+        # so the HTTP response returns immediately. This removes the need
+        # to start a separate worker process in development.
+        def _sync_wrapper():
+            import asyncio
+            asyncio.run(_run_distillation(str(job.id), celery_self=None))
+
+        background_tasks.add_task(_sync_wrapper)
+    else:
+        # Production: use Celery worker queue
+        distill_user_task.delay(str(job.id))
 
     return {
         "job_id": str(job.id),

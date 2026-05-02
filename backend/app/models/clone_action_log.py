@@ -1,20 +1,19 @@
 from __future__ import annotations
 
 import uuid
-from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import String, Text, DateTime, ForeignKey, JSON
+from sqlalchemy import String, Text, ForeignKey, JSON
 from sqlalchemy import Uuid
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.models.base import Base, UUIDMixin
+from app.models.base import Base, UUIDMixin, TimestampMixin
 
 if TYPE_CHECKING:
     pass
 
 
-class CloneActionLog(Base, UUIDMixin):
+class CloneActionLog(Base, UUIDMixin, TimestampMixin):
     __tablename__ = "clone_action_logs"
 
     clone_id: Mapped[uuid.UUID] = mapped_column(
@@ -25,6 +24,3 @@ class CloneActionLog(Base, UUIDMixin):
     )  # reply / match / post / activate / deactivate / etc
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     action_metadata: Mapped[dict | None] = mapped_column(JSON, nullable=True)
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), default=datetime.utcnow, nullable=False
-    )

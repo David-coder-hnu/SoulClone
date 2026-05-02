@@ -5,15 +5,12 @@ from sqlalchemy import DateTime, ForeignKey, Enum
 from sqlalchemy import Uuid
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.models.base import Base
+from app.models.base import Base, UUIDMixin, TimestampMixin
 
 
-class Takeover(Base):
+class Takeover(Base, UUIDMixin, TimestampMixin):
     __tablename__ = "takeovers"
 
-    id: Mapped[uuid.UUID] = mapped_column(
-        Uuid, primary_key=True, default=uuid.uuid4
-    )
     conversation_id: Mapped[uuid.UUID] = mapped_column(
         Uuid, ForeignKey("conversations.id"), nullable=False
     )
