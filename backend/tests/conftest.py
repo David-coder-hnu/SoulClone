@@ -1,8 +1,15 @@
+import os
+
 import pytest_asyncio
-from httpx import AsyncClient, ASGITransport
-from app.main import app
-from app.db.session import engine
-from app.models.base import Base
+
+os.environ.setdefault("ENVIRONMENT", "testing")
+os.environ.setdefault("DEBUG", "false")
+os.environ.setdefault("REDIS_URL", "memory")
+
+from httpx import AsyncClient, ASGITransport  # noqa: E402
+from app.main import app  # noqa: E402
+from app.db.session import engine  # noqa: E402
+from app.models.base import Base  # noqa: E402
 
 
 @pytest_asyncio.fixture(autouse=True)

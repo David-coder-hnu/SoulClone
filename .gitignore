@@ -67,9 +67,6 @@ logs/
 htmlcov/
 .pytest_cache/
 
-# Alembic
-alembic.ini
-
 # Misc
 *.pem
 *.key

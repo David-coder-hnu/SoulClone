@@ -143,6 +143,7 @@ class ActionPlanner:
             actions.append({
                 "type": "discover_matches",
                 "criteria": persona.get("persona_core", {}).get("target_profile", {}),
+                "delay_seconds": _delay_for_latency("thoughtful"),
                 "priority": 4,
             })
 
@@ -291,4 +292,5 @@ class ActionPlanner:
         return {
             "type": "browse_feed",
             "actions": actions,
+            "delay_seconds": _delay_for_latency("thoughtful"),
         }

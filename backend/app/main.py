@@ -2,18 +2,23 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Query
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy import text
 
 from app.config import settings
 from app.db.session import init_db
 from app.api.v1 import auth, users, distillation, clones, matches, conversations, messages, posts, feed, notifications, date_invites, calibration
 from app.websocket.manager import manager
 from app.websocket.chat_handler import ChatHandler
+from app.core.redis_client import redis_client, close_redis
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await init_db()
-    yield
+    try:
+        yield
+    finally:
+        await close_redis()
 
 
 app = FastAPI(
@@ -50,6 +55,36 @@ app.include_router(calibration.router, prefix="/api/v1/calibration", tags=["cali
 
 @app.get("/health")
 async def health():
+    """Readiness check for the API and its required data services."""
+    checks: dict[str, str] = {}
+
+    try:
+        from app.db.session import async_session
+
+        async with async_session() as db:
+            await db.execute(text("SELECT 1"))
+        checks["database"] = "ok"
+    except Exception:
+        checks["database"] = "unavailable"
+
+    try:
+        await redis_client.ping()
+        checks["redis"] = "ok"
+    except Exception:
+        checks["redis"] = "unavailable"
+
+    status = "ok" if all(value == "ok" for value in checks.values()) else "degraded"
+    return {
+        "status": status,
+        "app": settings.APP_NAME,
+        "environment": settings.ENVIRONMENT,
+        "checks": checks,
+    }
+
+
+@app.get("/health/live")
+async def liveness():
+    """Liveness check that does not depend on external services."""
     return {"status": "ok", "app": settings.APP_NAME}
 
 
