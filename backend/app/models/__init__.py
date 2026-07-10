@@ -21,6 +21,7 @@ from app.models.clone_profile_version import CloneProfileVersion
 from app.models.memory_embedding import MemoryEmbedding
 from app.models.calibration_test import CalibrationTest
 from app.models.calibration_refinement import CalibrationRefinement
+from app.models.refresh_token import RefreshToken
 
 __all__ = [
     "Base",
@@ -46,4 +47,5 @@ __all__ = [
     "MemoryEmbedding",
     "CalibrationTest",
     "CalibrationRefinement",
+    "RefreshToken",
 ]

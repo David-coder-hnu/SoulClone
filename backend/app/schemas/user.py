@@ -21,6 +21,10 @@ class TokenOut(BaseModel):
     token_type: str = "bearer"
 
 
+class RefreshTokenIn(BaseModel):
+    refresh_token: str = Field(..., min_length=1)
+
+
 class UserOut(BaseModel):
     id: UUID
     phone: str

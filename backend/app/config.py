@@ -13,6 +13,8 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7  # 7 days for dev convenience
     REFRESH_TOKEN_EXPIRE_DAYS: int = 30
     ALGORITHM: str = "HS256"
+    LOGIN_MAX_FAILURES: int = 5
+    LOGIN_FAILURE_WINDOW_SECONDS: int = 300
 
     # Database — development uses SQLite, production uses PostgreSQL
     DATABASE_URL: str = "sqlite+aiosqlite:///./soulclone_dev.db"
