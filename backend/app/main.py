@@ -1,4 +1,6 @@
 from contextlib import asynccontextmanager
+from json import JSONDecodeError
+import logging
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Query
 from fastapi.middleware.cors import CORSMiddleware
@@ -10,6 +12,8 @@ from app.api.v1 import auth, users, distillation, clones, matches, conversations
 from app.websocket.manager import manager
 from app.websocket.chat_handler import ChatHandler
 from app.core.redis_client import redis_client, close_redis
+
+logger = logging.getLogger(__name__)
 
 
 @asynccontextmanager
@@ -107,13 +111,37 @@ async def websocket_chat(websocket: WebSocket, token: str = Query(...)):
         return
     
     await manager.connect(websocket, user_id)
+    await websocket.send_json(
+        {
+            "type": "connected",
+            "heartbeat_interval_seconds": 25,
+        }
+    )
     
     from app.db.session import async_session
     async with async_session() as db:
         handler = ChatHandler(db)
         try:
             while True:
-                data = await websocket.receive_json()
+                try:
+                    data = await websocket.receive_json()
+                except JSONDecodeError:
+                    await websocket.send_json(
+                        {
+                            "type": "error",
+                            "code": "INVALID_JSON",
+                            "message": "Invalid JSON payload",
+                        }
+                    )
+                    continue
                 await handler.handle_message(user_id, data)
         except WebSocketDisconnect:
+            pass
+        except Exception:
+            logger.exception("Unexpected WebSocket error", extra={"user_id": user_id})
+            try:
+                await websocket.close(code=1011, reason="Internal server error")
+            except Exception:
+                pass
+        finally:
             manager.disconnect(websocket, user_id)

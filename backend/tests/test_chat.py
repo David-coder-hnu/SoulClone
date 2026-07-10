@@ -281,3 +281,27 @@ async def test_read_receipt_marks_incoming_messages_and_is_idempotent(
         second.json()["id"],
     }
     assert repeated_receipt["message_ids"] == []
+
+
+@pytest.mark.asyncio
+async def test_websocket_ping_returns_pong(client, monkeypatch):
+    send_personal_message = AsyncMock()
+    monkeypatch.setattr(
+        "app.websocket.chat_handler.manager.send_personal_message",
+        send_personal_message,
+    )
+
+    async with async_session() as db:
+        handler = ChatHandler(db)
+        await handler.handle_message(
+            str(uuid.uuid4()),
+            {
+                "type": "ping",
+                "client_time": "2026-07-10T00:00:00Z",
+            },
+        )
+
+    payload = send_personal_message.await_args.args[0]
+    assert payload["type"] == "pong"
+    assert payload["client_time"] == "2026-07-10T00:00:00Z"
+    assert "server_time" in payload

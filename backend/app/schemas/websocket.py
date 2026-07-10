@@ -33,8 +33,13 @@ class ReadReceiptEvent(BaseModel):
     message_id: UUID
 
 
+class PingEvent(BaseModel):
+    type: Literal["ping"]
+    client_time: str | None = None
+
+
 ClientEvent = Annotated[
-    ChatMessageEvent | TypingEvent | ReadReceiptEvent,
+    ChatMessageEvent | TypingEvent | ReadReceiptEvent | PingEvent,
     Field(discriminator="type"),
 ]
 

@@ -5,6 +5,7 @@ ChatHandler — WebSocket 消息处理器
 """
 
 import uuid
+from datetime import datetime, timezone
 
 from sqlalchemy import select
 from pydantic import ValidationError
@@ -20,6 +21,7 @@ from app.models.clone import Clone
 from app.schemas.websocket import (
     ChatMessageEvent,
     ReadReceiptEvent,
+    PingEvent,
     TypingEvent,
     client_event_adapter,
 )
@@ -46,6 +48,15 @@ class ChatHandler:
                 await self._handle_typing(user_id, event)
             elif isinstance(event, ReadReceiptEvent):
                 await self._handle_read_receipt(user_id, event)
+            elif isinstance(event, PingEvent):
+                await manager.send_personal_message(
+                    {
+                        "type": "pong",
+                        "client_time": event.client_time,
+                        "server_time": datetime.now(timezone.utc).isoformat(),
+                    },
+                    user_id,
+                )
         except ConversationAccessError:
             await self._send_error(
                 user_id,

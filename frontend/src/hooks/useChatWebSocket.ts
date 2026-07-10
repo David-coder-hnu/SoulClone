@@ -39,21 +39,51 @@ interface ReadReceiptPayload {
   read_at: string
 }
 
+interface PongPayload {
+  type: 'pong'
+  client_time: string | null
+  server_time: string
+}
+
+interface ConnectedPayload {
+  type: 'connected'
+  heartbeat_interval_seconds: number
+}
+
 const MAX_RECONNECT_ATTEMPTS = 5
 const INITIAL_RECONNECT_DELAY = 1000
+const HEARTBEAT_INTERVAL = 25_000
+const HEARTBEAT_TIMEOUT = 60_000
 
 export function useChatWebSocket(conversationId: string) {
   const ws = useRef<WebSocket | null>(null)
   const reconnectAttempts = useRef(0)
   const reconnectTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const heartbeatTimer = useRef<ReturnType<typeof setInterval> | null>(null)
+  const heartbeatWatchdog = useRef<ReturnType<typeof setInterval> | null>(null)
+  const lastPongAt = useRef(Date.now())
+  const shouldReconnect = useRef(true)
   const [isConnected, setIsConnected] = useState(false)
   const queryClient = useQueryClient()
   const { token } = useAuthStore()
 
   useEffect(() => {
     if (!token || !conversationId) return
+    shouldReconnect.current = true
+
+    const stopHeartbeat = () => {
+      if (heartbeatTimer.current) {
+        clearInterval(heartbeatTimer.current)
+        heartbeatTimer.current = null
+      }
+      if (heartbeatWatchdog.current) {
+        clearInterval(heartbeatWatchdog.current)
+        heartbeatWatchdog.current = null
+      }
+    }
 
     const connect = () => {
+      if (!shouldReconnect.current) return
       const wsUrl = `${import.meta.env.VITE_WS_URL || 'ws://localhost:8000'}/ws/chat?token=${token}`
       const socket = new WebSocket(wsUrl)
       ws.current = socket
@@ -62,6 +92,21 @@ export function useChatWebSocket(conversationId: string) {
         console.log('[WS] Chat connected')
         setIsConnected(true)
         reconnectAttempts.current = 0
+        lastPongAt.current = Date.now()
+        stopHeartbeat()
+        heartbeatTimer.current = setInterval(() => {
+          if (socket.readyState === WebSocket.OPEN) {
+            socket.send(JSON.stringify({
+              type: 'ping',
+              client_time: new Date().toISOString(),
+            }))
+          }
+        }, HEARTBEAT_INTERVAL)
+        heartbeatWatchdog.current = setInterval(() => {
+          if (Date.now() - lastPongAt.current > HEARTBEAT_TIMEOUT) {
+            socket.close(4000, 'Heartbeat timeout')
+          }
+        }, 10_000)
       }
 
       socket.onmessage = (event) => {
@@ -71,7 +116,11 @@ export function useChatWebSocket(conversationId: string) {
             | TypingPayload
             | AckPayload
             | ReadReceiptPayload
-          if (data.type === 'message' && data.conversation_id === conversationId) {
+            | PongPayload
+            | ConnectedPayload
+          if (data.type === 'pong') {
+            lastPongAt.current = Date.now()
+          } else if (data.type === 'message' && data.conversation_id === conversationId) {
             playSound('receive-message')
             // Append incoming message to React Query cache
             queryClient.setQueryData<Message[]>(
@@ -120,8 +169,12 @@ export function useChatWebSocket(conversationId: string) {
         console.log('[WS] Chat disconnected')
         setIsConnected(false)
         ws.current = null
+        stopHeartbeat()
         // Exponential backoff reconnection
-        if (reconnectAttempts.current < MAX_RECONNECT_ATTEMPTS) {
+        if (
+          shouldReconnect.current
+          && reconnectAttempts.current < MAX_RECONNECT_ATTEMPTS
+        ) {
           const delay = INITIAL_RECONNECT_DELAY * Math.pow(2, reconnectAttempts.current)
           reconnectAttempts.current += 1
           reconnectTimer.current = setTimeout(() => {
@@ -141,6 +194,8 @@ export function useChatWebSocket(conversationId: string) {
     connect()
 
     return () => {
+      shouldReconnect.current = false
+      stopHeartbeat()
       if (reconnectTimer.current) {
         clearTimeout(reconnectTimer.current)
         reconnectTimer.current = null
