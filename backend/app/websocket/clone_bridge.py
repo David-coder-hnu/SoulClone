@@ -78,6 +78,7 @@ class CloneBridge:
         control_version_at_start: int | None = None,
         status_callback: Callable[[str], Awaitable[None]] | None = None,
         client_message_id: str | uuid.UUID | None = None,
+        trace_id: str | uuid.UUID | None = None,
     ):
         """
         Full clone reply pipeline:
@@ -156,6 +157,8 @@ class CloneBridge:
             current_mood=mood_context,
             memory_context=memory_context,
             behavior_rules=profile.behavior_rules or {},
+            user_id=user_id,
+            trace_id=trace_id,
         )
 
         # 8. Apply reply delay based on behavior rules and mood
@@ -239,6 +242,7 @@ class CloneBridge:
         clone_id: str,
         user_id: str,
         recent_activities: list[str],
+        trace_id: str | uuid.UUID | None = None,
     ) -> str:
         """Generate a social post in clone's style."""
         await self.initialize_clone(clone_id)
@@ -265,6 +269,8 @@ class CloneBridge:
             recent_activities=recent_activities,
             mood=mood_context,
             memory_context=memory_context,
+            user_id=user_id,
+            trace_id=trace_id,
         )
 
         return post

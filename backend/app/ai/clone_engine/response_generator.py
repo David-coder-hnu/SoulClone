@@ -5,6 +5,8 @@ ResponseGenerator — 高精度克隆回复生成器
 生成精确到仿佛用户本人在打字的回复。
 """
 
+import uuid
+
 from app.ai.llm_client import llm_client
 
 
@@ -18,6 +20,8 @@ class ResponseGenerator:
         current_mood: dict | None = None,
         memory_context: str | None = None,
         behavior_rules: dict | None = None,
+        user_id: str | None = None,
+        trace_id: str | uuid.UUID | None = None,
     ) -> str:
         """
         Generate a clone response that mimics the user's style with high fidelity.
@@ -85,8 +89,12 @@ class ResponseGenerator:
             messages=context_messages,
             temperature=round(temp, 2),
             max_tokens=500,
+            task_type="clone_reply",
+            user_id=user_id,
+            trace_id=trace_id,
         )
-
+        if not isinstance(response, str):
+            raise RuntimeError("Clone reply generation returned a stream")
         return response
 
     async def generate_post(
@@ -95,6 +103,8 @@ class ResponseGenerator:
         recent_activities: list[str],
         mood: dict,
         memory_context: str | None = None,
+        user_id: str | None = None,
+        trace_id: str | uuid.UUID | None = None,
     ) -> str:
         """Generate a social media post in user's style"""
 
@@ -131,8 +141,12 @@ class ResponseGenerator:
             messages=messages,
             temperature=0.85,  # Slightly higher for creativity in posts
             max_tokens=300,
+            task_type="clone_post",
+            user_id=user_id,
+            trace_id=trace_id,
         )
-
+        if not isinstance(response, str):
+            raise RuntimeError("Clone post generation returned a stream")
         return response
 
     def _format_relationship_context(self, context: dict) -> str:

@@ -61,6 +61,7 @@ async def test_generated_response(
         conversation_history=req.conversation_context or [],
         user_message=req.scenario,
         relationship_context={"intimacy_level": 50},
+        user_id=str(user_id),
     )
 
     return {

@@ -42,6 +42,7 @@ async def _run_clone_reply_job(
     from sqlalchemy import select
 
     from app.core.realtime_events import publish_to_users
+    from app.ai.llm_client import LLMGatewayError
     from app.db.session import async_session
     from app.models.clone import Clone
     from app.models.conversation import Conversation
@@ -92,6 +93,7 @@ async def _run_clone_reply_job(
                     "conversation_id": str(job.conversation_id),
                     "status": status,
                     "attempt_count": job.attempt_count,
+                    "trace_id": str(job.trace_id),
                 },
                 participant_ids,
             )
@@ -149,6 +151,7 @@ async def _run_clone_reply_job(
                 control_version_at_start=job.control_version,
                 status_callback=update_status,
                 client_message_id=job.id,
+                trace_id=job.trace_id,
             )
             if reply is None:
                 allowed, _ = await ConversationControlService(
@@ -167,14 +170,26 @@ async def _run_clone_reply_job(
             await jobs.complete(job, reply.id)
             await publish_status("completed")
         except Exception as exc:
+            is_gateway_error = isinstance(exc, LLMGatewayError)
+            error_code = exc.code if is_gateway_error else "generation_failed"
             await jobs.fail(
                 job,
-                error_code="generation_failed",
+                error_code=error_code,
                 error_message=str(exc),
             )
             await publish_status("failed")
+            retryable_gateway_codes = {
+                "timeout",
+                "rate_limited",
+                "provider_unavailable",
+                "provider_error",
+                "empty_response",
+            }
+            should_retry = (
+                not is_gateway_error or exc.code in retryable_gateway_codes
+            )
             if (
-                celery_self is not None
+                should_retry and celery_self is not None
                 and celery_self.request.retries < celery_self.max_retries
             ):
                 countdown = 15 * (2 ** celery_self.request.retries)

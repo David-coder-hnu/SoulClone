@@ -42,6 +42,7 @@ class CloneReplyJob(Base, UUIDMixin, TimestampMixin):
     )
     control_version: Mapped[int] = mapped_column(Integer, nullable=False)
     model: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    trace_id: Mapped[uuid.UUID] = mapped_column(Uuid, nullable=False, default=uuid.uuid4)
     error_code: Mapped[str | None] = mapped_column(String(50), nullable=True)
     error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
     worker_task_id: Mapped[str | None] = mapped_column(String(100), nullable=True)

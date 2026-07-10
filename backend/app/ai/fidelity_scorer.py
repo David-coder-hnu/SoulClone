@@ -251,16 +251,12 @@ class FidelityScorer:
     async def _batch_embed(self, texts: list[str]) -> list[list[float]]:
         """Generate embeddings for a batch of texts."""
         try:
-            from app.config import settings
-            import openai
-            client = openai.AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
+            from app.ai.llm_client import llm_client
 
-            # OpenAI batch embedding supports up to 2048 inputs
-            resp = await client.embeddings.create(
+            return await llm_client.embeddings(
+                texts,
                 model="text-embedding-3-small",
-                input=[t[:8000] for t in texts],
             )
-            return [d.embedding for d in resp.data]
         except Exception:
             return []
 

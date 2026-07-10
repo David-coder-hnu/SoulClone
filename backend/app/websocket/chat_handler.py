@@ -174,6 +174,7 @@ class ChatHandler:
                 "conversation_id": conversation_id,
                 "status": job.status,
                 "attempt_count": job.attempt_count,
+                "trace_id": str(job.trace_id),
             },
             participant_ids,
         )

@@ -49,6 +49,7 @@ class CloneReplyJobService:
             idempotency_key=f"clone-reply:{source_uuid}:{clone_uuid}",
             control_version=control_version,
             model=settings.DEFAULT_LLM_MODEL,
+            trace_id=uuid.uuid4(),
         )
         self.db.add(job)
         try:

@@ -362,15 +362,11 @@ class MemoryManager:
     async def _generate_embedding(self, text: str) -> list[float] | None:
         """Generate embedding vector using OpenAI API."""
         try:
-            # Use the OpenAI client directly for embeddings
-            from app.config import settings
-            import openai
-            client = openai.AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
-            resp = await client.embeddings.create(
+            vectors = await llm_client.embeddings(
+                [text],
                 model="text-embedding-3-small",
-                input=text[:8000],
             )
-            return resp.data[0].embedding
+            return vectors[0] if vectors else None
         except Exception:
             return None
 

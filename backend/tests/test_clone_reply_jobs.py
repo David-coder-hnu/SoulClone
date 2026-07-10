@@ -7,6 +7,7 @@ from unittest.mock import AsyncMock, Mock
 import pytest
 from sqlalchemy import func, select
 
+from app.ai.llm_client import LLMGatewayError
 from app.core.tasks import _run_clone_reply_job
 from app.db.session import async_session
 from app.models.clone import Clone
@@ -158,9 +159,11 @@ async def test_clone_reply_job_completes_once_across_duplicate_delivery(
         control_version_at_start,
         status_callback,
         client_message_id,
+        trace_id,
     ):
         assert incoming_message == "queued hello"
         assert client_message_id == uuid.UUID(job_id)
+        assert trace_id is not None
         for status in (
             "context_loading",
             "generating",
@@ -323,3 +326,34 @@ async def test_generation_failure_is_persisted_for_retry(client, monkeypatch):
     assert job.error_code == "generation_failed"
     assert job.error_message == "provider timeout"
     assert job.lease_expires_at is None
+
+
+@pytest.mark.asyncio
+async def test_gateway_error_code_is_preserved_on_reply_job(client, monkeypatch):
+    context = await _create_context(client)
+    job_id = await _create_source_and_job(context)
+    gateway_error = LLMGatewayError(
+        "all providers timed out",
+        code="timeout",
+        trace_id=uuid.uuid4(),
+        attempt_count=4,
+    )
+    monkeypatch.setattr(
+        CloneBridge,
+        "generate_and_send_clone_reply",
+        AsyncMock(side_effect=gateway_error),
+    )
+    monkeypatch.setattr(
+        "app.core.realtime_events.publish_to_users",
+        AsyncMock(),
+    )
+
+    with pytest.raises(LLMGatewayError):
+        await _run_clone_reply_job(job_id)
+
+    async with async_session() as db:
+        job = await db.get(CloneReplyJob, uuid.UUID(job_id))
+
+    assert job.status == "failed"
+    assert job.error_code == "timeout"
+    assert job.error_message == "all providers timed out"

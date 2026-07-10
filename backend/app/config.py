@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from pydantic_settings import BaseSettings
 from functools import lru_cache
+import json
 
 
 class Settings(BaseSettings):
@@ -26,6 +27,11 @@ class Settings(BaseSettings):
     OPENAI_BASE_URL: str | None = None
     ANTHROPIC_API_KEY: str | None = None
     DEFAULT_LLM_MODEL: str = "gpt-4o"
+    LLM_FALLBACK_MODELS: str = ""
+    LLM_TIMEOUT_SECONDS: float = 45.0
+    LLM_MAX_ATTEMPTS_PER_MODEL: int = 2
+    LLM_RETRY_BASE_SECONDS: float = 1.0
+    LLM_MODEL_COSTS_JSON: str = "{}"
 
     CORS_ORIGINS: str = "http://localhost:5173"
     MAX_UPLOAD_SIZE_MB: int = 10
@@ -53,6 +59,35 @@ class Settings(BaseSettings):
     @property
     def use_memory_redis(self) -> bool:
         return self.REDIS_URL.lower() in ("memory", "", "fakeredis")
+
+    @property
+    def llm_fallback_models_list(self) -> list[str]:
+        return [
+            model.strip()
+            for model in self.LLM_FALLBACK_MODELS.split(",")
+            if model.strip()
+        ]
+
+    @property
+    def llm_model_costs(self) -> dict[str, dict[str, float]]:
+        try:
+            parsed = json.loads(self.LLM_MODEL_COSTS_JSON)
+        except (TypeError, ValueError):
+            return {}
+        if not isinstance(parsed, dict):
+            return {}
+        normalized: dict[str, dict[str, float]] = {}
+        for model, rates in parsed.items():
+            if not isinstance(rates, dict):
+                continue
+            try:
+                normalized[str(model)] = {
+                    "input": float(rates.get("input", 0)),
+                    "output": float(rates.get("output", 0)),
+                }
+            except (TypeError, ValueError):
+                continue
+        return normalized
 
 
 @lru_cache()
