@@ -11,8 +11,9 @@ from sqlalchemy import select
 from pydantic import ValidationError
 
 from app.websocket.manager import manager
-from app.websocket.clone_bridge import CloneBridge
 from app.services.chat_service import ChatService
+from app.services.clone_reply_dispatcher import dispatch_clone_reply_job
+from app.services.clone_reply_job_service import CloneReplyJobService
 from app.services.conversation_access_service import (
     ConversationAccessError,
     ConversationAccessService,
@@ -37,9 +38,9 @@ class ChatHandler:
     def __init__(self, db):
         self.db = db
         self.chat_service = ChatService(db)
+        self.clone_reply_jobs = CloneReplyJobService(db)
         self.access = ConversationAccessService(db)
         self.control = ConversationControlService(db)
-        self.clone_bridge = CloneBridge(db)
 
     async def handle_message(self, user_id: str, data: dict):
         try:
@@ -121,12 +122,19 @@ class ChatHandler:
         await self.db.commit()
 
         # Trigger clone reply if the other participant has an active clone
-        await self._trigger_clone_reply_if_needed(conversation_id, user_id, content)
+        await self._queue_clone_reply_if_needed(
+            conversation_id,
+            user_id,
+            msg.id,
+        )
 
-    async def _trigger_clone_reply_if_needed(
-        self, conversation_id: str, sender_user_id: str, incoming_content: str
+    async def _queue_clone_reply_if_needed(
+        self,
+        conversation_id: str,
+        sender_user_id: str,
+        source_message_id: uuid.UUID,
     ):
-        """Check if the recipient has an active clone, and trigger auto-reply"""
+        """Persist and dispatch an idempotent clone reply job."""
         # Get conversation to find the other participant
         conv = await self.chat_service.get_conversation(conversation_id)
         if not conv:
@@ -152,19 +160,35 @@ class ChatHandler:
         if not allowed:
             return
 
-        # Trigger clone reply via clone_bridge
+        job, created = await self.clone_reply_jobs.create_or_get(
+            source_message_id=source_message_id,
+            conversation_id=conversation_id,
+            clone_id=clone.id,
+            control_version=control.version,
+        )
+        participant_ids = self.access.participant_ids(conv)
+        await manager.send_to_users(
+            {
+                "type": "clone_reply_status",
+                "job_id": str(job.id),
+                "conversation_id": conversation_id,
+                "status": job.status,
+                "attempt_count": job.attempt_count,
+            },
+            participant_ids,
+        )
+        if not created:
+            return
+
         try:
-            await self.clone_bridge.generate_and_send_clone_reply(
-                clone_id=str(clone.id),
-                user_id=other_user_id,
-                conversation_id=conversation_id,
-                incoming_message=incoming_content,
-                other_user_id=sender_user_id,
-                control_version_at_start=control.version,
-            )
+            dispatch_clone_reply_job(str(job.id))
         except Exception as e:
-            # Log error but don't crash the websocket
-            print(f"Clone reply failed: {e}")
+            await self.clone_reply_jobs.mark_queue_unavailable(job, str(e))
+            await self._send_error(
+                sender_user_id,
+                "CLONE_REPLY_QUEUE_UNAVAILABLE",
+                "Message saved; clone reply will be retried later",
+            )
 
     async def _handle_typing(self, user_id: str, event: TypingEvent):
         conversation_id = event.conversation_id

@@ -8,6 +8,181 @@ from celery_worker import celery_app
 
 
 # ---------------------------------------------------------------------------
+# Clone reply task
+# ---------------------------------------------------------------------------
+
+
+@celery_app.task(bind=True, max_retries=2, acks_late=True)
+def clone_reply_task(self, job_id: str):
+    """Execute one persistent clone reply job."""
+    import asyncio
+
+    async def run_and_dispose():
+        try:
+            await _run_clone_reply_job(
+                job_id,
+                celery_self=self,
+                worker_task_id=self.request.id,
+            )
+        finally:
+            from app.db.session import engine
+
+            await engine.dispose()
+
+    asyncio.run(run_and_dispose())
+
+
+async def _run_clone_reply_job(
+    job_id: str,
+    celery_self=None,
+    worker_task_id: str | None = None,
+):
+    import uuid
+
+    from sqlalchemy import select
+
+    from app.core.realtime_events import publish_to_users
+    from app.db.session import async_session
+    from app.models.clone import Clone
+    from app.models.conversation import Conversation
+    from app.models.message import Message
+    from app.services.clone_reply_job_service import CloneReplyJobService
+    from app.services.conversation_control_service import ConversationControlService
+    from app.websocket.clone_bridge import CloneBridge
+
+    async with async_session() as db:
+        jobs = CloneReplyJobService(db)
+        worker_task_id = worker_task_id or f"local:{uuid.uuid4()}"
+        job = await jobs.claim(job_id, worker_task_id)
+        if job is None:
+            return
+
+        source_result = await db.execute(
+            select(Message).where(Message.id == job.source_message_id)
+        )
+        source_message = source_result.scalar_one_or_none()
+        clone_result = await db.execute(
+            select(Clone).where(Clone.id == job.clone_id)
+        )
+        clone = clone_result.scalar_one_or_none()
+        conversation_result = await db.execute(
+            select(Conversation).where(Conversation.id == job.conversation_id)
+        )
+        conversation = conversation_result.scalar_one_or_none()
+
+        if source_message is None or clone is None or conversation is None:
+            await jobs.fail(
+                job,
+                error_code="job_context_missing",
+                error_message="Required message, clone, or conversation was not found",
+            )
+            return
+
+        owner_user_id = str(clone.user_id)
+        participant_ids = [
+            str(conversation.participant_a_id),
+            str(conversation.participant_b_id),
+        ]
+
+        async def publish_status(status: str) -> None:
+            await publish_to_users(
+                {
+                    "type": "clone_reply_status",
+                    "job_id": str(job.id),
+                    "conversation_id": str(job.conversation_id),
+                    "status": status,
+                    "attempt_count": job.attempt_count,
+                },
+                participant_ids,
+            )
+
+        try:
+            existing_reply_result = await db.execute(
+                select(Message).where(
+                    Message.sender_id == clone.user_id,
+                    Message.client_message_id == job.id,
+                )
+            )
+            existing_reply = existing_reply_result.scalar_one_or_none()
+            if existing_reply is not None:
+                await jobs.complete(job, existing_reply.id)
+                await publish_to_users(
+                    {
+                        "type": "message",
+                        "conversation_id": str(job.conversation_id),
+                        "message": {
+                            "id": str(existing_reply.id),
+                            "sender_id": owner_user_id,
+                            "sender_type": "clone",
+                            "content": existing_reply.content,
+                            "created_at": existing_reply.created_at.isoformat(),
+                        },
+                    },
+                    participant_ids,
+                )
+                await publish_status("completed")
+                return
+
+            allowed, _ = await ConversationControlService(db).clone_reply_allowed(
+                job.conversation_id,
+                owner_user_id,
+                expected_version=job.control_version,
+            )
+            if not allowed:
+                await jobs.cancel(job, "control_changed_before_execution")
+                await publish_status("cancelled")
+                return
+
+            await publish_status("planning")
+            bridge = CloneBridge(db)
+
+            async def update_status(status: str) -> None:
+                await jobs.set_status(job, status)
+                await publish_status(status)
+
+            reply = await bridge.generate_and_send_clone_reply(
+                clone_id=str(clone.id),
+                user_id=owner_user_id,
+                conversation_id=str(job.conversation_id),
+                incoming_message=source_message.content,
+                other_user_id=str(source_message.sender_id),
+                control_version_at_start=job.control_version,
+                status_callback=update_status,
+                client_message_id=job.id,
+            )
+            if reply is None:
+                allowed, _ = await ConversationControlService(
+                    db
+                ).clone_reply_allowed(
+                    job.conversation_id,
+                    owner_user_id,
+                    expected_version=job.control_version,
+                )
+                if not allowed:
+                    await jobs.cancel(job, "control_changed_during_generation")
+                    await publish_status("cancelled")
+                    return
+                raise RuntimeError("Clone reply pipeline returned no message")
+
+            await jobs.complete(job, reply.id)
+            await publish_status("completed")
+        except Exception as exc:
+            await jobs.fail(
+                job,
+                error_code="generation_failed",
+                error_message=str(exc),
+            )
+            await publish_status("failed")
+            if (
+                celery_self is not None
+                and celery_self.request.retries < celery_self.max_retries
+            ):
+                countdown = 15 * (2 ** celery_self.request.retries)
+                raise celery_self.retry(countdown=countdown, exc=exc)
+            raise
+
+
+# ---------------------------------------------------------------------------
 # Distillation pipeline task
 # ---------------------------------------------------------------------------
 

@@ -1,4 +1,6 @@
 from contextlib import asynccontextmanager
+from contextlib import suppress
+import asyncio
 from json import JSONDecodeError
 import logging
 
@@ -12,6 +14,8 @@ from app.api.v1 import auth, users, distillation, clones, matches, conversations
 from app.websocket.manager import manager
 from app.websocket.chat_handler import ChatHandler
 from app.core.redis_client import redis_client, close_redis
+from app.core.realtime_events import run_realtime_event_forwarder
+from app.services.clone_reply_dispatcher import shutdown_local_clone_reply_tasks
 
 logger = logging.getLogger(__name__)
 
@@ -19,9 +23,14 @@ logger = logging.getLogger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await init_db()
+    realtime_forwarder = asyncio.create_task(run_realtime_event_forwarder())
     try:
         yield
     finally:
+        await shutdown_local_clone_reply_tasks()
+        realtime_forwarder.cancel()
+        with suppress(asyncio.CancelledError):
+            await realtime_forwarder
         await close_redis()
 
 

@@ -216,10 +216,10 @@ async def test_takeover_cancels_clone_reply_that_is_already_generating(
     clone_owner_id = context["user_b"]
     generation_started = asyncio.Event()
     finish_generation = asyncio.Event()
-    send_to_users = AsyncMock()
+    publish_to_users = AsyncMock()
     monkeypatch.setattr(
-        "app.websocket.clone_bridge.manager.send_to_users",
-        send_to_users,
+        "app.websocket.clone_bridge.publish_to_users",
+        publish_to_users,
     )
     monkeypatch.setattr(
         "app.websocket.clone_bridge.asyncio.sleep",
@@ -288,7 +288,7 @@ async def test_takeover_cancels_clone_reply_that_is_already_generating(
 
     assert reply is None
     assert message_count == 0
-    send_to_users.assert_not_awaited()
+    publish_to_users.assert_not_awaited()
 
 
 @pytest.mark.asyncio

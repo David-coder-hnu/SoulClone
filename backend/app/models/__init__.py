@@ -23,6 +23,7 @@ from app.models.calibration_test import CalibrationTest
 from app.models.calibration_refinement import CalibrationRefinement
 from app.models.refresh_token import RefreshToken
 from app.models.conversation_control import ConversationControl
+from app.models.clone_reply_job import CloneReplyJob
 
 __all__ = [
     "Base",
@@ -50,4 +51,5 @@ __all__ = [
     "CalibrationRefinement",
     "RefreshToken",
     "ConversationControl",
+    "CloneReplyJob",
 ]

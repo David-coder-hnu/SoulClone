@@ -8,9 +8,10 @@ with full PostgreSQL + Redis persistence.
 import asyncio
 from datetime import datetime, timezone
 import uuid
+from collections.abc import Awaitable, Callable
 from sqlalchemy import select
 
-from app.websocket.manager import manager
+from app.core.realtime_events import publish_to_users
 from app.services.chat_service import ChatService
 from app.ai.clone_engine.response_generator import ResponseGenerator
 from app.ai.clone_engine.emotion_simulator import EmotionSimulator
@@ -75,6 +76,8 @@ class CloneBridge:
         incoming_message: str,
         other_user_id: str,
         control_version_at_start: int | None = None,
+        status_callback: Callable[[str], Awaitable[None]] | None = None,
+        client_message_id: str | uuid.UUID | None = None,
     ):
         """
         Full clone reply pipeline:
@@ -95,6 +98,8 @@ class CloneBridge:
         if not allowed:
             return None
         control_version_at_start = control.version
+        if status_callback:
+            await status_callback("context_loading")
 
         # Ensure clone is initialized
         await self.initialize_clone(clone_id)
@@ -141,6 +146,8 @@ class CloneBridge:
         )
 
         # 7. Generate response
+        if status_callback:
+            await status_callback("generating")
         response_text = await self.generator.generate(
             system_prompt=profile.system_prompt,
             conversation_history=formatted_history,
@@ -165,10 +172,14 @@ class CloneBridge:
         # Use random delay within range (not fixed 0.3)
         import random
         delay = random.randint(delay_min, delay_max)
+        if status_callback:
+            await status_callback("waiting")
         await asyncio.sleep(delay)
 
         # Second control check: a reply generated under an older control version
         # must never be persisted or delivered.
+        if status_callback:
+            await status_callback("validating")
         allowed, _ = await self.control.clone_reply_allowed(
             conversation_id,
             user_id,
@@ -178,12 +189,15 @@ class CloneBridge:
             return None
 
         # 9. Store and send message
+        if status_callback:
+            await status_callback("delivering")
         msg = await self.chat_service.send_message(
             conversation_id=conversation_id,
             sender_id=user_id,
             sender_type="clone",
             sender_clone_id=clone_id,
             content=response_text,
+            client_message_id=client_message_id,
         )
 
         # 10. Record clone's own response in memory
@@ -192,17 +206,22 @@ class CloneBridge:
         )
 
         # 11. Send only to conversation participants (privacy-safe)
-        await manager.send_to_users({
-            "type": "message",
-            "conversation_id": conversation_id,
-            "message": {
-                "id": str(msg.id),
-                "sender_id": user_id,
-                "sender_type": "clone",
-                "content": response_text,
-                "created_at": msg.created_at.isoformat() if msg.created_at else None,
+        await publish_to_users(
+            {
+                "type": "message",
+                "conversation_id": conversation_id,
+                "message": {
+                    "id": str(msg.id),
+                    "sender_id": user_id,
+                    "sender_type": "clone",
+                    "content": response_text,
+                    "created_at": (
+                        msg.created_at.isoformat() if msg.created_at else None
+                    ),
+                },
             },
-        }, [user_id, other_user_id])
+            [user_id, other_user_id],
+        )
 
         # Update relationship intimacy (simple heuristic)
         if other_user_id:
