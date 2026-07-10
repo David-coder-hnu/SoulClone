@@ -1,4 +1,5 @@
 import random
+import uuid
 
 from sqlalchemy import select, or_
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -83,11 +84,30 @@ class MatchService:
 
         return match
 
-    async def update_status(self, match_id: str, status: str) -> Match:
-        result = await self.db.execute(select(Match).where(Match.id == match_id))
+    async def update_status(
+        self,
+        match_id: str,
+        status: str,
+        user_id: str | uuid.UUID,
+    ) -> Match | None:
+        try:
+            match_uuid = uuid.UUID(str(match_id))
+            user_uuid = uuid.UUID(str(user_id))
+        except (TypeError, ValueError):
+            return None
+
+        result = await self.db.execute(
+            select(Match).where(
+                Match.id == match_uuid,
+                or_(
+                    Match.user_a_id == user_uuid,
+                    Match.user_b_id == user_uuid,
+                ),
+            )
+        )
         match = result.scalar_one_or_none()
         if not match:
-            raise ValueError("Match not found")
+            return None
         match.status = status
         await self.db.commit()
         await self.db.refresh(match)

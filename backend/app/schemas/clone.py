@@ -1,7 +1,7 @@
 from datetime import datetime
 from uuid import UUID
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class CloneOut(BaseModel):
@@ -28,6 +28,5 @@ class CloneOut(BaseModel):
 
 
 class CloneConfigUpdate(BaseModel):
-    name: str | None = None
-    autonomy_level: int | None = None
-    status: str | None = None
+    name: str | None = Field(default=None, min_length=1, max_length=50)
+    autonomy_level: int | None = Field(default=None, ge=1, le=4)

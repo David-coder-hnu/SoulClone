@@ -1,7 +1,7 @@
 from datetime import datetime
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class UserCreate(BaseModel):
@@ -23,6 +23,19 @@ class TokenOut(BaseModel):
 
 class RefreshTokenIn(BaseModel):
     refresh_token: str = Field(..., min_length=1)
+
+
+class UserUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    nickname: str | None = Field(default=None, max_length=50)
+    avatar_url: str | None = Field(default=None, max_length=500)
+    gender: str | None = Field(default=None, max_length=10)
+    birth_date: datetime | None = None
+    location_city: str | None = Field(default=None, max_length=50)
+    location_lat: float | None = Field(default=None, ge=-90, le=90)
+    location_lng: float | None = Field(default=None, ge=-180, le=180)
+    bio: str | None = Field(default=None, max_length=2000)
 
 
 class UserOut(BaseModel):

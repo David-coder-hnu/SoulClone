@@ -46,5 +46,7 @@ async def match_action(
         raise HTTPException(status_code=400, detail="Invalid action")
 
     status = "accepted" if action.action == "accept" else "rejected"
-    match = await service.update_status(match_id, status)
+    match = await service.update_status(match_id, status, user_id)
+    if match is None:
+        raise HTTPException(status_code=404, detail="Match not found")
     return {"status": status, "match_id": str(match.id)}

@@ -34,7 +34,18 @@ async def respond_to_invite(
     db: AsyncSession = Depends(get_db),
 ):
     """Respond to a date invite"""
-    result = await db.execute(select(DateInvite).where(DateInvite.id == invite_id))
+    try:
+        invite_uuid = uuid.UUID(invite_id)
+    except ValueError:
+        raise HTTPException(status_code=404, detail="Invite not found") from None
+
+    result = await db.execute(
+        select(DateInvite).where(
+            DateInvite.id == invite_uuid,
+            DateInvite.invitee_user_id == user_id,
+            DateInvite.status == "pending",
+        )
+    )
     invite = result.scalar_one_or_none()
     if not invite:
         raise HTTPException(status_code=404, detail="Invite not found")

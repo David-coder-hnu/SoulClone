@@ -54,10 +54,15 @@ class NotificationService:
         )
         return result.scalar() or 0
 
-    async def mark_as_read(self, notification_id: str) -> Notification | None:
+    async def mark_as_read(
+        self,
+        notification_id: str,
+        user_id: str | uuid.UUID,
+    ) -> Notification | None:
         result = await self.db.execute(
             select(Notification).where(
-                Notification.id == self._as_uuid(notification_id)
+                Notification.id == self._as_uuid(notification_id),
+                Notification.user_id == self._as_uuid(user_id),
             )
         )
         notif = result.scalar_one_or_none()
