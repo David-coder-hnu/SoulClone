@@ -5,6 +5,7 @@ import uuid
 import pytest
 
 from app.db.session import async_session
+from app.models.clone import Clone
 from app.models.conversation import Conversation
 from app.models.date_invite import DateInvite
 from app.models.match import Match
@@ -68,6 +69,8 @@ async def test_only_invitee_can_respond_to_pending_date_invite(client):
     token_c, _ = await _register(client, "13900138005", "Attacker")
 
     async with async_session() as db:
+        proposer_clone = Clone(user_id=user_a, name="Proposer Clone")
+        db.add(proposer_clone)
         conversation = Conversation(
             participant_a_id=user_a,
             participant_b_id=user_b,
@@ -76,7 +79,7 @@ async def test_only_invitee_can_respond_to_pending_date_invite(client):
         await db.flush()
         invite = DateInvite(
             conversation_id=conversation.id,
-            proposer_clone_id=uuid.uuid4(),
+            proposer_clone_id=proposer_clone.id,
             proposer_user_id=user_a,
             invitee_user_id=user_b,
             status="pending",
