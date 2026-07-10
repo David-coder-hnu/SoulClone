@@ -73,5 +73,6 @@ async def send_message(
         sender_id=user_id,
         sender_type="human",
         content=data.content,
+        client_message_id=data.client_message_id,
     )
     return msg

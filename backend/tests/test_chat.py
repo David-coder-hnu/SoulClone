@@ -169,6 +169,7 @@ async def test_websocket_handler_rejects_non_member_before_writing(
             {
                 "type": "message",
                 "conversation_id": context["conversation_id"],
+                "client_message_id": str(uuid.uuid4()),
                 "content": "unauthorized websocket message",
             },
         )
@@ -183,3 +184,44 @@ async def test_websocket_handler_rejects_non_member_before_writing(
         },
         context["user_c"],
     )
+
+
+@pytest.mark.asyncio
+async def test_websocket_message_is_idempotent_and_acknowledged(
+    client,
+    monkeypatch,
+):
+    context = await _create_three_users_and_conversation(client)
+    send_personal_message = AsyncMock()
+    send_to_users = AsyncMock()
+    monkeypatch.setattr(
+        "app.websocket.chat_handler.manager.send_personal_message",
+        send_personal_message,
+    )
+    monkeypatch.setattr(
+        "app.websocket.chat_handler.manager.send_to_users",
+        send_to_users,
+    )
+    client_message_id = str(uuid.uuid4())
+    event = {
+        "type": "message",
+        "conversation_id": context["conversation_id"],
+        "client_message_id": client_message_id,
+        "content": "send exactly once",
+    }
+
+    async with async_session() as db:
+        handler = ChatHandler(db)
+        await handler.handle_message(context["user_a"], event)
+        await handler.handle_message(context["user_a"], event)
+        message_count = await db.scalar(select(func.count(Message.id)))
+
+    assert message_count == 1
+    assert send_to_users.await_count == 1
+    assert send_personal_message.await_count == 2
+    first_ack = send_personal_message.await_args_list[0].args[0]
+    second_ack = send_personal_message.await_args_list[1].args[0]
+    assert first_ack["type"] == second_ack["type"] == "ack"
+    assert first_ack["client_message_id"] == client_message_id
+    assert first_ack["duplicate"] is False
+    assert second_ack["duplicate"] is True

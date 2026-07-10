@@ -22,6 +22,14 @@ interface TypingPayload {
   is_typing: boolean
 }
 
+interface AckPayload {
+  type: 'ack'
+  client_message_id: string
+  server_message_id: string
+  status: 'persisted'
+  duplicate: boolean
+}
+
 const MAX_RECONNECT_ATTEMPTS = 5
 const INITIAL_RECONNECT_DELAY = 1000
 
@@ -47,7 +55,7 @@ export function useChatWebSocket(conversationId: string) {
 
       socket.onmessage = (event) => {
         try {
-          const data = JSON.parse(event.data) as ChatMessagePayload | TypingPayload
+          const data = JSON.parse(event.data) as ChatMessagePayload | TypingPayload | AckPayload
           if (data.type === 'message' && data.conversation_id === conversationId) {
             playSound('receive-message')
             // Append incoming message to React Query cache
@@ -116,14 +124,18 @@ export function useChatWebSocket(conversationId: string) {
   const sendMessage = useCallback(
     (content: string) => {
       if (ws.current?.readyState === WebSocket.OPEN) {
+        const clientMessageId = crypto.randomUUID()
         ws.current.send(
           JSON.stringify({
             type: 'message',
             conversation_id: conversationId,
+            client_message_id: clientMessageId,
             content,
           })
         )
+        return clientMessageId
       }
+      return null
     },
     [conversationId]
   )

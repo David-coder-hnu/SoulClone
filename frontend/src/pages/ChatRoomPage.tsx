@@ -6,7 +6,6 @@ import {
   Hand, MoreHorizontal
 } from 'lucide-react'
 import { formatDate } from '@/lib/utils'
-import { api } from '@/lib/api'
 import { Avatar } from '@/components/ui/Avatar'
 import { Badge } from '@/components/ui/Badge'
 import { useAuthStore } from '@/stores/authStore'
@@ -47,21 +46,16 @@ export default function ChatRoomPage() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
-  const sendMessage = useCallback(async () => {
+  const sendMessage = useCallback(() => {
     if (!input.trim() || !conversationId) return
     const content = input.trim()
-    setInput('')
-    inputRef.current?.focus()
-
-    // Backend saves the message and broadcasts via WebSocket.
-    // We only POST — no manual WS send, to avoid duplicates.
-    try {
-      await api.post(`/messages/${conversationId}`, { content })
+    const clientMessageId = sendWsMessage(content)
+    if (clientMessageId) {
+      setInput('')
+      inputRef.current?.focus()
       playSound('send-message')
-    } catch {
-      // fallback: let user retry
     }
-  }, [input, conversationId, user?.id, sendWsMessage])
+  }, [input, conversationId, sendWsMessage])
 
   const toggleMode = () => {
     if (!isManualMode) {

@@ -2,6 +2,7 @@ from datetime import datetime, timezone
 import uuid
 
 from sqlalchemy import select, or_, func
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.conversation import Conversation
@@ -111,8 +112,35 @@ class ChatService:
         sender_type: str,
         content: str,
         sender_clone_id: str | None = None,
+        client_message_id: str | uuid.UUID | None = None,
     ) -> Message:
+        message, _ = await self.send_message_idempotent(
+            conversation_id=conversation_id,
+            sender_id=sender_id,
+            sender_type=sender_type,
+            content=content,
+            sender_clone_id=sender_clone_id,
+            client_message_id=client_message_id,
+        )
+        return message
+
+    async def send_message_idempotent(
+        self,
+        conversation_id: str | uuid.UUID,
+        sender_id: str | uuid.UUID,
+        sender_type: str,
+        content: str,
+        sender_clone_id: str | uuid.UUID | None = None,
+        client_message_id: str | uuid.UUID | None = None,
+    ) -> tuple[Message, bool]:
         sender_uuid = self._as_uuid(sender_id)
+        client_uuid = self._as_uuid(client_message_id) if client_message_id else None
+
+        if client_uuid:
+            existing = await self._get_by_client_message_id(sender_uuid, client_uuid)
+            if existing:
+                return existing, False
+
         msg = Message(
             conversation_id=self._as_uuid(conversation_id),
             sender_id=sender_uuid,
@@ -120,7 +148,9 @@ class ChatService:
             sender_clone_id=(
                 self._as_uuid(sender_clone_id) if sender_clone_id else None
             ),
+            client_message_id=client_uuid,
             content=content,
+            delivery_status="persisted",
         )
         self.db.add(msg)
 
@@ -129,7 +159,18 @@ class ChatService:
         if conv:
             conv.last_message_at = datetime.now(timezone.utc)
 
-        await self.db.commit()
+        try:
+            await self.db.commit()
+        except IntegrityError:
+            await self.db.rollback()
+            if client_uuid:
+                existing = await self._get_by_client_message_id(
+                    sender_uuid,
+                    client_uuid,
+                )
+                if existing:
+                    return existing, False
+            raise
         await self.db.refresh(msg)
 
         # Notify recipient
@@ -148,7 +189,20 @@ class ChatService:
             payload={"conversation_id": str(conversation_id), "message_id": str(msg.id)},
         )
 
-        return msg
+        return msg, True
+
+    async def _get_by_client_message_id(
+        self,
+        sender_id: uuid.UUID,
+        client_message_id: uuid.UUID,
+    ) -> Message | None:
+        result = await self.db.execute(
+            select(Message).where(
+                Message.sender_id == sender_id,
+                Message.client_message_id == client_message_id,
+            )
+        )
+        return result.scalar_one_or_none()
 
     async def start_takeover(self, conversation_id: str, user_id: str, clone_id: str | None = None) -> Takeover:
         user_uuid = self._as_uuid(user_id)

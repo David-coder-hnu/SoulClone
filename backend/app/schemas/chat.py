@@ -28,6 +28,7 @@ class ConversationOut(BaseModel):
 class MessageCreate(BaseModel):
     content: str = Field(min_length=1, max_length=4000)
     content_type: str = "text"
+    client_message_id: UUID | None = None
 
     @field_validator("content")
     @classmethod

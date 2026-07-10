@@ -4,7 +4,10 @@ ChatHandler — WebSocket 消息处理器
 处理人类用户的消息，并在适当时机触发克隆体自动回复。
 """
 
+import uuid
+
 from sqlalchemy import select
+from pydantic import ValidationError
 
 from app.websocket.manager import manager
 from app.websocket.clone_bridge import CloneBridge
@@ -14,6 +17,12 @@ from app.services.conversation_access_service import (
     ConversationAccessService,
 )
 from app.models.clone import Clone
+from app.schemas.websocket import (
+    ChatMessageEvent,
+    ReadReceiptEvent,
+    TypingEvent,
+    client_event_adapter,
+)
 
 
 class ChatHandler:
@@ -24,17 +33,19 @@ class ChatHandler:
         self.clone_bridge = CloneBridge(db)
 
     async def handle_message(self, user_id: str, data: dict):
-        msg_type = data.get("type")
+        try:
+            event = client_event_adapter.validate_python(data)
+        except ValidationError:
+            await self._send_error(user_id, "INVALID_EVENT", "Invalid event payload")
+            return
 
         try:
-            if msg_type == "message":
-                await self._handle_chat_message(user_id, data)
-            elif msg_type == "typing":
-                await self._handle_typing(user_id, data)
-            elif msg_type == "read_receipt":
-                await self._handle_read_receipt(user_id, data)
-            else:
-                await self._send_error(user_id, "INVALID_EVENT", "Unsupported event type")
+            if isinstance(event, ChatMessageEvent):
+                await self._handle_chat_message(user_id, event)
+            elif isinstance(event, TypingEvent):
+                await self._handle_typing(user_id, event)
+            elif isinstance(event, ReadReceiptEvent):
+                await self._handle_read_receipt(user_id, event)
         except ConversationAccessError:
             await self._send_error(
                 user_id,
@@ -42,23 +53,33 @@ class ChatHandler:
                 "Conversation not found",
             )
 
-    async def _handle_chat_message(self, user_id: str, data: dict):
-        conversation_id = data.get("conversation_id")
-        content = data.get("content")
+    async def _handle_chat_message(self, user_id: str, event: ChatMessageEvent):
+        conversation_id = event.conversation_id
+        content = event.content
         conversation = await self.access.require_member(conversation_id, user_id)
 
-        if not isinstance(content, str) or not content.strip() or len(content) > 4000:
-            await self._send_error(user_id, "INVALID_MESSAGE", "Invalid message content")
-            return
-        content = content.strip()
-
         # Save human message
-        msg = await self.chat_service.send_message(
+        msg, created = await self.chat_service.send_message_idempotent(
             conversation_id=conversation_id,
             sender_id=user_id,
             sender_type="human",
             content=content,
+            client_message_id=event.client_message_id,
         )
+
+        await manager.send_personal_message(
+            {
+                "type": "ack",
+                "client_message_id": str(event.client_message_id),
+                "server_message_id": str(msg.id),
+                "status": "persisted",
+                "duplicate": not created,
+            },
+            user_id,
+        )
+
+        if not created:
+            return
 
         # Send only to conversation participants (privacy-safe)
         recipient_ids = self.access.participant_ids(conversation)
@@ -69,6 +90,8 @@ class ChatHandler:
             "message": {
                 "id": str(msg.id),
                 "sender_id": user_id,
+                "sender_type": "human",
+                "client_message_id": str(event.client_message_id),
                 "content": content,
                 "created_at": msg.created_at.isoformat() if msg.created_at else None,
             },
@@ -91,7 +114,7 @@ class ChatHandler:
         # Check if other user has an active clone
         result = await self.db.execute(
             select(Clone).where(
-                Clone.user_id == other_user_id,
+                Clone.user_id == uuid.UUID(other_user_id),
                 Clone.status == "active",
             )
         )
@@ -115,8 +138,8 @@ class ChatHandler:
             # Log error but don't crash the websocket
             print(f"Clone reply failed: {e}")
 
-    async def _handle_typing(self, user_id: str, data: dict):
-        conversation_id = data.get("conversation_id")
+    async def _handle_typing(self, user_id: str, event: TypingEvent):
+        conversation_id = event.conversation_id
         conversation = await self.access.require_member(conversation_id, user_id)
         recipient_ids = self.access.participant_ids(conversation)
 
@@ -124,11 +147,11 @@ class ChatHandler:
             "type": "typing",
             "conversation_id": conversation_id,
             "user_id": user_id,
-            "is_typing": data.get("is_typing", False),
+            "is_typing": event.is_typing,
         }, recipient_ids)
 
-    async def _handle_read_receipt(self, user_id: str, data: dict):
-        conversation_id = data.get("conversation_id")
+    async def _handle_read_receipt(self, user_id: str, event: ReadReceiptEvent):
+        conversation_id = event.conversation_id
         await self.access.require_member(conversation_id, user_id)
         await self._send_error(user_id, "NOT_IMPLEMENTED", "Read receipts are not available yet")
 
