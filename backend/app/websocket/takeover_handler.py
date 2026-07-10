@@ -1,13 +1,13 @@
 from app.websocket.manager import manager
-from app.services.chat_service import ChatService
 from app.services.conversation_access_service import ConversationAccessService
+from app.services.conversation_control_service import ConversationControlService
 
 
 class TakeoverHandler:
     def __init__(self, db):
         self.db = db
-        self.chat_service = ChatService(db)
         self.access = ConversationAccessService(db)
+        self.control = ConversationControlService(db)
 
     async def handle_takeover(self, user_id: str, data: dict):
         action = data.get("action")
@@ -17,23 +17,41 @@ class TakeoverHandler:
         recipient_ids = self.access.participant_ids(conversation)
 
         if action == "enter":
-            takeover = await self.chat_service.start_takeover(
-                conversation_id=conversation_id,
-                user_id=user_id,
+            snapshot = await self.control.transition(
+                conversation_id,
+                user_id,
+                "takeover",
+                reason="legacy_websocket_takeover",
             )
-            await manager.send_to_users({
-                "type": "takeover_notice",
-                "conversation_id": conversation_id,
-                "taken_over_by": "human",
-            }, recipient_ids)
-            return {"status": "takeover_started", "takeover_id": str(takeover.id)}
+            await manager.send_to_users(
+                {
+                    "type": "control_changed",
+                    "conversation_id": conversation_id,
+                    "user_id": user_id,
+                    "mode": snapshot.mode,
+                    "version": snapshot.version,
+                },
+                recipient_ids,
+            )
+            return {"status": "takeover_started", "version": snapshot.version}
 
         elif action == "exit":
-            await manager.send_to_users({
-                "type": "takeover_notice",
-                "conversation_id": conversation_id,
-                "taken_over_by": "avatar",
-            }, recipient_ids)
-            return {"status": "released"}
+            snapshot = await self.control.transition(
+                conversation_id,
+                user_id,
+                "release",
+                reason="legacy_websocket_release",
+            )
+            await manager.send_to_users(
+                {
+                    "type": "control_changed",
+                    "conversation_id": conversation_id,
+                    "user_id": user_id,
+                    "mode": snapshot.mode,
+                    "version": snapshot.version,
+                },
+                recipient_ids,
+            )
+            return {"status": "released", "version": snapshot.version}
 
         return {"status": "unknown_action"}

@@ -22,6 +22,7 @@ from app.models.memory_embedding import MemoryEmbedding
 from app.models.calibration_test import CalibrationTest
 from app.models.calibration_refinement import CalibrationRefinement
 from app.models.refresh_token import RefreshToken
+from app.models.conversation_control import ConversationControl
 
 __all__ = [
     "Base",
@@ -48,4 +49,5 @@ __all__ = [
     "CalibrationTest",
     "CalibrationRefinement",
     "RefreshToken",
+    "ConversationControl",
 ]

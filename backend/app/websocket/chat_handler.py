@@ -17,9 +17,15 @@ from app.services.conversation_access_service import (
     ConversationAccessError,
     ConversationAccessService,
 )
+from app.services.conversation_control_service import (
+    ConversationControlService,
+    ControlSnapshot,
+    InvalidControlTransition,
+)
 from app.models.clone import Clone
 from app.schemas.websocket import (
     ChatMessageEvent,
+    ControlEvent,
     ReadReceiptEvent,
     PingEvent,
     TypingEvent,
@@ -32,6 +38,7 @@ class ChatHandler:
         self.db = db
         self.chat_service = ChatService(db)
         self.access = ConversationAccessService(db)
+        self.control = ConversationControlService(db)
         self.clone_bridge = CloneBridge(db)
 
     async def handle_message(self, user_id: str, data: dict):
@@ -48,6 +55,8 @@ class ChatHandler:
                 await self._handle_typing(user_id, event)
             elif isinstance(event, ReadReceiptEvent):
                 await self._handle_read_receipt(user_id, event)
+            elif isinstance(event, ControlEvent):
+                await self._handle_control(user_id, event)
             elif isinstance(event, PingEvent):
                 await manager.send_personal_message(
                     {
@@ -136,9 +145,13 @@ class ChatHandler:
         if not clone:
             return
 
-        # Check if there's an active takeover (human is controlling)
-        # TODO: check takeover state
-        
+        allowed, control = await self.control.clone_reply_allowed(
+            conversation_id,
+            other_user_id,
+        )
+        if not allowed:
+            return
+
         # Trigger clone reply via clone_bridge
         try:
             await self.clone_bridge.generate_and_send_clone_reply(
@@ -147,6 +160,7 @@ class ChatHandler:
                 conversation_id=conversation_id,
                 incoming_message=incoming_content,
                 other_user_id=sender_user_id,
+                control_version_at_start=control.version,
             )
         except Exception as e:
             # Log error but don't crash the websocket
@@ -188,6 +202,48 @@ class ChatHandler:
             },
             self.access.participant_ids(conversation),
         )
+
+    async def _handle_control(self, user_id: str, event: ControlEvent):
+        conversation = await self.access.require_member(event.conversation_id, user_id)
+        if event.action == "get":
+            snapshot = await self.control.snapshot(event.conversation_id, user_id)
+            await manager.send_personal_message(
+                self._control_payload(snapshot), user_id
+            )
+            return
+
+        try:
+            snapshot = await self.control.transition(
+                event.conversation_id,
+                user_id,
+                event.action,
+                actor="human",
+                reason=f"websocket_{event.action}",
+            )
+        except InvalidControlTransition as exc:
+            await self._send_error(user_id, "INVALID_CONTROL_TRANSITION", str(exc))
+            return
+
+        await manager.send_to_users(
+            self._control_payload(snapshot),
+            self.access.participant_ids(conversation),
+        )
+
+    @staticmethod
+    def _control_payload(snapshot: ControlSnapshot) -> dict:
+        return {
+            "type": "control_changed",
+            "conversation_id": str(snapshot.conversation_id),
+            "user_id": str(snapshot.user_id),
+            "mode": snapshot.mode,
+            "version": snapshot.version,
+            "changed_at": snapshot.changed_at.isoformat(),
+            "expires_at": (
+                snapshot.expires_at.isoformat() if snapshot.expires_at else None
+            ),
+            "changed_by": snapshot.changed_by,
+            "reason": snapshot.reason,
+        }
 
     @staticmethod
     async def _send_error(user_id: str, code: str, message: str) -> None:

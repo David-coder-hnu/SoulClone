@@ -7,6 +7,7 @@ with full PostgreSQL + Redis persistence.
 
 import asyncio
 from datetime import datetime, timezone
+import uuid
 from sqlalchemy import select
 
 from app.websocket.manager import manager
@@ -16,6 +17,7 @@ from app.ai.clone_engine.emotion_simulator import EmotionSimulator
 from app.ai.clone_engine.memory_manager import MemoryManager
 from app.models.clone_profile import CloneProfile
 from app.models.clone import Clone
+from app.services.conversation_control_service import ConversationControlService
 
 
 class CloneBridge:
@@ -24,6 +26,7 @@ class CloneBridge:
     def __init__(self, db):
         self.db = db
         self.chat_service = ChatService(db)
+        self.control = ConversationControlService(db)
         self.generator = ResponseGenerator()
         self.emotion = EmotionSimulator(db=db)
         self.memory = MemoryManager(db=db)
@@ -35,7 +38,7 @@ class CloneBridge:
             return True
 
         result = await self.db.execute(
-            select(Clone).where(Clone.id == clone_id)
+            select(Clone).where(Clone.id == uuid.UUID(str(clone_id)))
         )
         clone = result.scalar_one_or_none()
         if not clone or not clone.profile_id:
@@ -71,6 +74,7 @@ class CloneBridge:
         conversation_id: str,
         incoming_message: str,
         other_user_id: str,
+        control_version_at_start: int | None = None,
     ):
         """
         Full clone reply pipeline:
@@ -82,6 +86,16 @@ class CloneBridge:
         6. Apply behavior rules (delay, length)
         7. Send via WebSocket
         """
+        # First control check: do not start work after takeover/pause/block.
+        allowed, control = await self.control.clone_reply_allowed(
+            conversation_id,
+            user_id,
+            expected_version=control_version_at_start,
+        )
+        if not allowed:
+            return None
+        control_version_at_start = control.version
+
         # Ensure clone is initialized
         await self.initialize_clone(clone_id)
 
@@ -96,7 +110,7 @@ class CloneBridge:
 
         # 3. Load clone profile
         result = await self.db.execute(
-            select(Clone).where(Clone.id == clone_id)
+            select(Clone).where(Clone.id == uuid.UUID(str(clone_id)))
         )
         clone = result.scalar_one_or_none()
         if not clone or not clone.profile_id:
@@ -153,6 +167,16 @@ class CloneBridge:
         delay = random.randint(delay_min, delay_max)
         await asyncio.sleep(delay)
 
+        # Second control check: a reply generated under an older control version
+        # must never be persisted or delivered.
+        allowed, _ = await self.control.clone_reply_allowed(
+            conversation_id,
+            user_id,
+            expected_version=control_version_at_start,
+        )
+        if not allowed:
+            return None
+
         # 9. Store and send message
         msg = await self.chat_service.send_message(
             conversation_id=conversation_id,
@@ -174,6 +198,7 @@ class CloneBridge:
             "message": {
                 "id": str(msg.id),
                 "sender_id": user_id,
+                "sender_type": "clone",
                 "content": response_text,
                 "created_at": msg.created_at.isoformat() if msg.created_at else None,
             },
@@ -200,7 +225,7 @@ class CloneBridge:
         await self.initialize_clone(clone_id)
 
         result = await self.db.execute(
-            select(Clone).where(Clone.id == clone_id)
+            select(Clone).where(Clone.id == uuid.UUID(str(clone_id)))
         )
         clone = result.scalar_one_or_none()
         if not clone or not clone.profile_id:

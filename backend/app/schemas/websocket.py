@@ -38,8 +38,14 @@ class PingEvent(BaseModel):
     client_time: str | None = None
 
 
+class ControlEvent(BaseModel):
+    type: Literal["control"]
+    conversation_id: UUID
+    action: Literal["get", "takeover", "release", "pause", "resume"]
+
+
 ClientEvent = Annotated[
-    ChatMessageEvent | TypingEvent | ReadReceiptEvent | PingEvent,
+    ChatMessageEvent | TypingEvent | ReadReceiptEvent | PingEvent | ControlEvent,
     Field(discriminator="type"),
 ]
 

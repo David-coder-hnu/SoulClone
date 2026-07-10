@@ -10,8 +10,48 @@ from app.services.conversation_access_service import (
     ConversationAccessError,
     ConversationAccessService,
 )
+from app.services.conversation_control_service import (
+    ConversationControlService,
+    ControlSnapshot,
+    InvalidControlTransition,
+)
+from app.websocket.manager import manager
 
 router = APIRouter()
+
+
+def _control_payload(snapshot: ControlSnapshot) -> dict:
+    return {
+        "type": "control_changed",
+        "conversation_id": str(snapshot.conversation_id),
+        "user_id": str(snapshot.user_id),
+        "mode": snapshot.mode,
+        "version": snapshot.version,
+        "changed_at": snapshot.changed_at.isoformat(),
+        "expires_at": (
+            snapshot.expires_at.isoformat() if snapshot.expires_at else None
+        ),
+        "changed_by": snapshot.changed_by,
+        "reason": snapshot.reason,
+    }
+
+
+async def _require_conversation(conversation_id, user_id, db):
+    access = ConversationAccessService(db)
+    try:
+        return await access.require_member(conversation_id, user_id)
+    except ConversationAccessError:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Conversation not found",
+        ) from None
+
+
+async def _broadcast_control(snapshot, conversation):
+    await manager.send_to_users(
+        _control_payload(snapshot),
+        ConversationAccessService.participant_ids(conversation),
+    )
 
 
 @router.get("")
@@ -33,22 +73,15 @@ async def takeover(
     db: AsyncSession = Depends(get_db),
 ):
     """Human takes over the conversation from clone"""
-    access = ConversationAccessService(db)
+    conversation = await _require_conversation(conversation_id, user_id, db)
     try:
-        conversation = await access.require_member(conversation_id, user_id)
-    except ConversationAccessError:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Conversation not found",
-        ) from None
-
-    service = ChatService(db)
-    takeover_record = await service.start_takeover(conversation.id, user_id)
-    return {
-        "status": "takeover_started",
-        "conversation_id": conversation_id,
-        "takeover_id": str(takeover_record.id),
-    }
+        snapshot = await ConversationControlService(db).transition(
+            conversation.id, user_id, "takeover", reason="manual_takeover"
+        )
+    except InvalidControlTransition as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from None
+    await _broadcast_control(snapshot, conversation)
+    return _control_payload(snapshot)
 
 
 @router.post("/{conversation_id}/release")
@@ -58,29 +91,26 @@ async def release(
     db: AsyncSession = Depends(get_db),
 ):
     """Release conversation back to clone"""
-    access = ConversationAccessService(db)
+    conversation = await _require_conversation(conversation_id, user_id, db)
     try:
-        conversation = await access.require_member(conversation_id, user_id)
-    except ConversationAccessError:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Conversation not found",
-        ) from None
-
-    # Find active takeover and end it
-    from sqlalchemy import select
-    from app.models.takeover import Takeover
-
-    result = await db.execute(
-        select(Takeover).where(
-            Takeover.conversation_id == conversation.id,
-            Takeover.user_id == user_id,
-            Takeover.ended_at.is_(None),
+        snapshot = await ConversationControlService(db).transition(
+            conversation.id, user_id, "release", reason="manual_release"
         )
-    )
-    takeover_record = result.scalar_one_or_none()
-    if takeover_record:
-        service = ChatService(db)
-        await service.end_takeover(str(takeover_record.id))
+    except InvalidControlTransition as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from None
+    await _broadcast_control(snapshot, conversation)
+    return _control_payload(snapshot)
 
-    return {"status": "released", "conversation_id": conversation_id}
+
+@router.get("/{conversation_id}/control")
+async def get_control(
+    conversation_id: str,
+    user_id: uuid.UUID = Depends(get_current_user_id),
+    db: AsyncSession = Depends(get_db),
+):
+    """Return the caller's authoritative control state for this conversation."""
+    await _require_conversation(conversation_id, user_id, db)
+    snapshot = await ConversationControlService(db).snapshot(
+        conversation_id, user_id
+    )
+    return _control_payload(snapshot)

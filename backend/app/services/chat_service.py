@@ -7,7 +7,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.conversation import Conversation
 from app.models.message import Message
-from app.models.takeover import Takeover
 from app.models.user import User
 from app.services.notification_service import NotificationService
 
@@ -243,47 +242,6 @@ class ChatService:
             await self.db.commit()
 
         return [message.id for message in unread_messages], read_at
-
-    async def start_takeover(self, conversation_id: str, user_id: str, clone_id: str | None = None) -> Takeover:
-        user_uuid = self._as_uuid(user_id)
-        takeover = Takeover(
-            conversation_id=self._as_uuid(conversation_id),
-            user_id=user_uuid,
-            clone_id=self._as_uuid(clone_id) if clone_id else None,
-        )
-        self.db.add(takeover)
-        await self.db.commit()
-        await self.db.refresh(takeover)
-
-        # Notify the other participant that human has taken over
-        conv = await self.get_conversation(conversation_id)
-        if conv:
-            other_user_id = (
-                conv.participant_b_id
-                if conv.participant_a_id == user_uuid
-                else conv.participant_a_id
-            )
-            notif_service = NotificationService(self.db)
-            await notif_service.create_notification(
-                user_id=other_user_id,
-                type="takeover_request",
-                title="真人接管",
-                content="对方已切换为手动回复模式",
-                payload={"conversation_id": str(conversation_id)},
-            )
-
-        return takeover
-
-    async def end_takeover(self, takeover_id: str) -> Takeover:
-        result = await self.db.execute(
-            select(Takeover).where(Takeover.id == self._as_uuid(takeover_id))
-        )
-        takeover = result.scalar_one_or_none()
-        if takeover:
-            takeover.ended_at = datetime.now(timezone.utc)
-            await self.db.commit()
-            await self.db.refresh(takeover)
-        return takeover
 
     @staticmethod
     def _as_uuid(value: str | uuid.UUID) -> uuid.UUID:

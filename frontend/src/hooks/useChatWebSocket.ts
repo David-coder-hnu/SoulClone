@@ -10,6 +10,7 @@ interface ChatMessagePayload {
   message: {
     id: string
     sender_id: string
+    sender_type?: 'human' | 'clone'
     content: string
     created_at: string
   }
@@ -50,6 +51,25 @@ interface ConnectedPayload {
   heartbeat_interval_seconds: number
 }
 
+type ControlMode =
+  | 'clone_active'
+  | 'human_active'
+  | 'clone_cooldown'
+  | 'paused'
+  | 'blocked'
+
+interface ControlChangedPayload {
+  type: 'control_changed'
+  conversation_id: string
+  user_id: string
+  mode: ControlMode
+  version: number
+  changed_at: string
+  expires_at: string | null
+  changed_by: 'human' | 'system' | 'admin'
+  reason: string | null
+}
+
 const MAX_RECONNECT_ATTEMPTS = 5
 const INITIAL_RECONNECT_DELAY = 1000
 const HEARTBEAT_INTERVAL = 25_000
@@ -64,8 +84,9 @@ export function useChatWebSocket(conversationId: string) {
   const lastPongAt = useRef(Date.now())
   const shouldReconnect = useRef(true)
   const [isConnected, setIsConnected] = useState(false)
+  const [controlMode, setControlMode] = useState<ControlMode>('clone_active')
   const queryClient = useQueryClient()
-  const { token } = useAuthStore()
+  const { token, user } = useAuthStore()
 
   useEffect(() => {
     if (!token || !conversationId) return
@@ -107,6 +128,11 @@ export function useChatWebSocket(conversationId: string) {
             socket.close(4000, 'Heartbeat timeout')
           }
         }, 10_000)
+        socket.send(JSON.stringify({
+          type: 'control',
+          conversation_id: conversationId,
+          action: 'get',
+        }))
       }
 
       socket.onmessage = (event) => {
@@ -118,6 +144,7 @@ export function useChatWebSocket(conversationId: string) {
             | ReadReceiptPayload
             | PongPayload
             | ConnectedPayload
+            | ControlChangedPayload
           if (data.type === 'pong') {
             lastPongAt.current = Date.now()
           } else if (data.type === 'message' && data.conversation_id === conversationId) {
@@ -131,7 +158,7 @@ export function useChatWebSocket(conversationId: string) {
                   id: data.message.id,
                   conversation_id: data.conversation_id,
                   sender_id: data.message.sender_id,
-                  sender_type: 'human',
+                  sender_type: data.message.sender_type || 'human',
                   sender_clone_id: null,
                   content: data.message.content,
                   content_type: 'text',
@@ -159,6 +186,12 @@ export function useChatWebSocket(conversationId: string) {
                   : message
               ) || []
             )
+          } else if (
+            data.type === 'control_changed'
+            && data.conversation_id === conversationId
+            && data.user_id === user?.id
+          ) {
+            setControlMode(data.mode)
           }
         } catch {
           // ignore non-JSON
@@ -206,7 +239,7 @@ export function useChatWebSocket(conversationId: string) {
       }
       reconnectAttempts.current = 0
     }
-  }, [token, conversationId, queryClient])
+  }, [token, conversationId, queryClient, user?.id])
 
   const sendMessage = useCallback(
     (content: string) => {
@@ -259,5 +292,27 @@ export function useChatWebSocket(conversationId: string) {
     [conversationId]
   )
 
-  return { sendMessage, sendTyping, sendReadReceipt, isConnected }
+  const sendControl = useCallback(
+    (action: 'takeover' | 'release' | 'pause' | 'resume') => {
+      if (ws.current?.readyState !== WebSocket.OPEN) return false
+      ws.current.send(
+        JSON.stringify({
+          type: 'control',
+          conversation_id: conversationId,
+          action,
+        })
+      )
+      return true
+    },
+    [conversationId]
+  )
+
+  return {
+    sendMessage,
+    sendTyping,
+    sendReadReceipt,
+    sendControl,
+    controlMode,
+    isConnected,
+  }
 }

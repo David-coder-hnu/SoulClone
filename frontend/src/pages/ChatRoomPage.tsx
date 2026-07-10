@@ -36,16 +36,18 @@ export default function ChatRoomPage() {
   const {
     sendMessage: sendWsMessage,
     sendReadReceipt,
+    sendControl,
+    controlMode,
     isConnected,
   } = useChatWebSocket(conversationId || '')
 
   const [input, setInput] = useState('')
-  const [isManualMode, setIsManualMode] = useState(false)
   const [showModeHint, setShowModeHint] = useState(false)
   const [isTyping] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const lastReadReceiptRef = useRef<string | null>(null)
+  const previousControlModeRef = useRef(controlMode)
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -66,6 +68,19 @@ export default function ChatRoomPage() {
     }
   }, [messages, user?.id, sendReadReceipt, isConnected])
 
+  useEffect(() => {
+    const enteredManualMode = (
+      controlMode === 'human_active'
+      && previousControlModeRef.current !== 'human_active'
+    )
+    previousControlModeRef.current = controlMode
+    if (!enteredManualMode) return
+
+    setShowModeHint(true)
+    const timer = setTimeout(() => setShowModeHint(false), 3000)
+    return () => clearTimeout(timer)
+  }, [controlMode])
+
   const sendMessage = useCallback(() => {
     if (!input.trim() || !conversationId) return
     const content = input.trim()
@@ -77,12 +92,11 @@ export default function ChatRoomPage() {
     }
   }, [input, conversationId, sendWsMessage])
 
+  const isManualMode = controlMode === 'human_active'
+
   const toggleMode = () => {
-    if (!isManualMode) {
-      setShowModeHint(true)
-      setTimeout(() => setShowModeHint(false), 3000)
-    }
-    setIsManualMode(!isManualMode)
+    const nextAction = isManualMode ? 'release' : 'takeover'
+    sendControl(nextAction)
   }
 
   const isLoading = convLoading || msgLoading
@@ -277,11 +291,12 @@ export default function ChatRoomPage() {
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.9 }}
             onClick={toggleMode}
+            disabled={!isConnected}
             className={`shrink-0 w-12 h-12 rounded-full flex items-center justify-center transition-all duration-150 ease-spring ${
               isManualMode
                 ? 'bg-gradient-to-br from-accent-cyan to-accent-magenta text-white glow-cyan-md'
                 : 'bg-bg-600 border border-white/[0.08] text-text-secondary hover:text-accent-cyan hover:border-accent-cyan/30'
-            }`}
+            } disabled:opacity-40 disabled:cursor-not-allowed`}
           >
             {isManualMode ? <User size={20} /> : <Hand size={20} />}
           </motion.button>
