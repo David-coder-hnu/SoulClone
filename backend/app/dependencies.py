@@ -28,7 +28,11 @@ async def get_current_user_id(
             detail="Missing authorization header",
         )
     payload = decode_token(credentials.credentials)
-    if not payload or "sub" not in payload:
+    if (
+        not payload
+        or "sub" not in payload
+        or payload.get("type") != "access"
+    ):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid token",

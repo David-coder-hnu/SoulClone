@@ -1,11 +1,15 @@
 import uuid
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.dependencies import get_db, get_current_user_id
 from app.schemas.chat import MessageCreate
 from app.services.chat_service import ChatService
+from app.services.conversation_access_service import (
+    ConversationAccessError,
+    ConversationAccessService,
+)
 
 router = APIRouter()
 
@@ -17,8 +21,17 @@ async def get_messages(
     db: AsyncSession = Depends(get_db),
 ):
     """Get messages for a conversation"""
+    access = ConversationAccessService(db)
+    try:
+        conversation = await access.require_member(conversation_id, user_id)
+    except ConversationAccessError:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Conversation not found",
+        ) from None
+
     service = ChatService(db)
-    messages = await service.list_messages(conversation_id)
+    messages = await service.list_messages(conversation.id)
     sanitized = []
     for msg in messages:
         m = {
@@ -45,9 +58,18 @@ async def send_message(
     db: AsyncSession = Depends(get_db),
 ):
     """Send a message (human or clone)"""
+    access = ConversationAccessService(db)
+    try:
+        conversation = await access.require_member(conversation_id, user_id)
+    except ConversationAccessError:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Conversation not found",
+        ) from None
+
     service = ChatService(db)
     msg = await service.send_message(
-        conversation_id=conversation_id,
+        conversation_id=conversation.id,
         sender_id=user_id,
         sender_type="human",
         content=data.content,

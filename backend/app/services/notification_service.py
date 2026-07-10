@@ -1,3 +1,5 @@
+import uuid
+
 from sqlalchemy import select, desc, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -17,7 +19,7 @@ class NotificationService:
         payload: dict | None = None,
     ) -> Notification:
         notif = Notification(
-            user_id=user_id,
+            user_id=self._as_uuid(user_id),
             type=type,
             title=title,
             content=content,
@@ -36,7 +38,7 @@ class NotificationService:
     ) -> list[Notification]:
         result = await self.db.execute(
             select(Notification)
-            .where(Notification.user_id == user_id)
+            .where(Notification.user_id == self._as_uuid(user_id))
             .order_by(desc(Notification.created_at))
             .limit(limit)
             .offset(offset)
@@ -46,7 +48,7 @@ class NotificationService:
     async def get_unread_count(self, user_id: str) -> int:
         result = await self.db.execute(
             select(func.count(Notification.id)).where(
-                Notification.user_id == user_id,
+                Notification.user_id == self._as_uuid(user_id),
                 Notification.is_read.is_(False),
             )
         )
@@ -54,7 +56,9 @@ class NotificationService:
 
     async def mark_as_read(self, notification_id: str) -> Notification | None:
         result = await self.db.execute(
-            select(Notification).where(Notification.id == notification_id)
+            select(Notification).where(
+                Notification.id == self._as_uuid(notification_id)
+            )
         )
         notif = result.scalar_one_or_none()
         if notif:
@@ -66,7 +70,7 @@ class NotificationService:
     async def mark_all_as_read(self, user_id: str) -> int:
         result = await self.db.execute(
             select(Notification).where(
-                Notification.user_id == user_id,
+                Notification.user_id == self._as_uuid(user_id),
                 Notification.is_read.is_(False),
             )
         )
@@ -75,3 +79,7 @@ class NotificationService:
             n.is_read = True
         await self.db.commit()
         return len(notifications)
+
+    @staticmethod
+    def _as_uuid(value: str | uuid.UUID) -> uuid.UUID:
+        return value if isinstance(value, uuid.UUID) else uuid.UUID(str(value))

@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+import uuid
 
 from sqlalchemy import select, or_, func
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -79,14 +80,16 @@ class ChatService:
 
     async def get_conversation(self, conversation_id: str):
         result = await self.db.execute(
-            select(Conversation).where(Conversation.id == conversation_id)
+            select(Conversation).where(
+                Conversation.id == self._as_uuid(conversation_id)
+            )
         )
         return result.scalar_one_or_none()
 
     async def create_conversation(self, participant_a_id: str, participant_b_id: str) -> Conversation:
         conv = Conversation(
-            participant_a_id=participant_a_id,
-            participant_b_id=participant_b_id,
+            participant_a_id=self._as_uuid(participant_a_id),
+            participant_b_id=self._as_uuid(participant_b_id),
         )
         self.db.add(conv)
         await self.db.commit()
@@ -96,7 +99,7 @@ class ChatService:
     async def list_messages(self, conversation_id: str):
         result = await self.db.execute(
             select(Message)
-            .where(Message.conversation_id == conversation_id)
+            .where(Message.conversation_id == self._as_uuid(conversation_id))
             .order_by(Message.created_at.asc())
         )
         return result.scalars().all()
@@ -109,11 +112,14 @@ class ChatService:
         content: str,
         sender_clone_id: str | None = None,
     ) -> Message:
+        sender_uuid = self._as_uuid(sender_id)
         msg = Message(
-            conversation_id=conversation_id,
-            sender_id=sender_id,
+            conversation_id=self._as_uuid(conversation_id),
+            sender_id=sender_uuid,
             sender_type=sender_type,
-            sender_clone_id=sender_clone_id,
+            sender_clone_id=(
+                self._as_uuid(sender_clone_id) if sender_clone_id else None
+            ),
             content=content,
         )
         self.db.add(msg)
@@ -127,7 +133,11 @@ class ChatService:
         await self.db.refresh(msg)
 
         # Notify recipient
-        other_user_id = str(conv.participant_b_id) if str(conv.participant_a_id) == sender_id else str(conv.participant_a_id)
+        other_user_id = (
+            conv.participant_b_id
+            if conv.participant_a_id == sender_uuid
+            else conv.participant_a_id
+        )
         notif_service = NotificationService(self.db)
         sender_label = "AI 孪生" if sender_type == "clone" else "对方"
         await notif_service.create_notification(
@@ -141,10 +151,11 @@ class ChatService:
         return msg
 
     async def start_takeover(self, conversation_id: str, user_id: str, clone_id: str | None = None) -> Takeover:
+        user_uuid = self._as_uuid(user_id)
         takeover = Takeover(
-            conversation_id=conversation_id,
-            user_id=user_id,
-            clone_id=clone_id,
+            conversation_id=self._as_uuid(conversation_id),
+            user_id=user_uuid,
+            clone_id=self._as_uuid(clone_id) if clone_id else None,
         )
         self.db.add(takeover)
         await self.db.commit()
@@ -153,7 +164,11 @@ class ChatService:
         # Notify the other participant that human has taken over
         conv = await self.get_conversation(conversation_id)
         if conv:
-            other_user_id = str(conv.participant_b_id) if str(conv.participant_a_id) == user_id else str(conv.participant_a_id)
+            other_user_id = (
+                conv.participant_b_id
+                if conv.participant_a_id == user_uuid
+                else conv.participant_a_id
+            )
             notif_service = NotificationService(self.db)
             await notif_service.create_notification(
                 user_id=other_user_id,
@@ -166,10 +181,16 @@ class ChatService:
         return takeover
 
     async def end_takeover(self, takeover_id: str) -> Takeover:
-        result = await self.db.execute(select(Takeover).where(Takeover.id == takeover_id))
+        result = await self.db.execute(
+            select(Takeover).where(Takeover.id == self._as_uuid(takeover_id))
+        )
         takeover = result.scalar_one_or_none()
         if takeover:
             takeover.ended_at = datetime.now(timezone.utc)
             await self.db.commit()
             await self.db.refresh(takeover)
         return takeover
+
+    @staticmethod
+    def _as_uuid(value: str | uuid.UUID) -> uuid.UUID:
+        return value if isinstance(value, uuid.UUID) else uuid.UUID(str(value))

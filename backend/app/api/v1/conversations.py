@@ -1,11 +1,15 @@
 import uuid
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.dependencies import get_db, get_current_user_id
 from app.schemas.chat import ConversationOut
 from app.services.chat_service import ChatService
+from app.services.conversation_access_service import (
+    ConversationAccessError,
+    ConversationAccessService,
+)
 
 router = APIRouter()
 
@@ -29,8 +33,17 @@ async def takeover(
     db: AsyncSession = Depends(get_db),
 ):
     """Human takes over the conversation from clone"""
+    access = ConversationAccessService(db)
+    try:
+        conversation = await access.require_member(conversation_id, user_id)
+    except ConversationAccessError:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Conversation not found",
+        ) from None
+
     service = ChatService(db)
-    takeover_record = await service.start_takeover(conversation_id, user_id)
+    takeover_record = await service.start_takeover(conversation.id, user_id)
     return {
         "status": "takeover_started",
         "conversation_id": conversation_id,
@@ -45,13 +58,22 @@ async def release(
     db: AsyncSession = Depends(get_db),
 ):
     """Release conversation back to clone"""
+    access = ConversationAccessService(db)
+    try:
+        conversation = await access.require_member(conversation_id, user_id)
+    except ConversationAccessError:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Conversation not found",
+        ) from None
+
     # Find active takeover and end it
     from sqlalchemy import select
     from app.models.takeover import Takeover
 
     result = await db.execute(
         select(Takeover).where(
-            Takeover.conversation_id == conversation_id,
+            Takeover.conversation_id == conversation.id,
             Takeover.user_id == user_id,
             Takeover.ended_at.is_(None),
         )

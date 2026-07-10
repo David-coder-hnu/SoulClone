@@ -9,6 +9,10 @@ from sqlalchemy import select
 from app.websocket.manager import manager
 from app.websocket.clone_bridge import CloneBridge
 from app.services.chat_service import ChatService
+from app.services.conversation_access_service import (
+    ConversationAccessError,
+    ConversationAccessService,
+)
 from app.models.clone import Clone
 
 
@@ -16,21 +20,37 @@ class ChatHandler:
     def __init__(self, db):
         self.db = db
         self.chat_service = ChatService(db)
+        self.access = ConversationAccessService(db)
         self.clone_bridge = CloneBridge(db)
 
     async def handle_message(self, user_id: str, data: dict):
         msg_type = data.get("type")
 
-        if msg_type == "message":
-            await self._handle_chat_message(user_id, data)
-        elif msg_type == "typing":
-            await self._handle_typing(user_id, data)
-        elif msg_type == "read_receipt":
-            await self._handle_read_receipt(user_id, data)
+        try:
+            if msg_type == "message":
+                await self._handle_chat_message(user_id, data)
+            elif msg_type == "typing":
+                await self._handle_typing(user_id, data)
+            elif msg_type == "read_receipt":
+                await self._handle_read_receipt(user_id, data)
+            else:
+                await self._send_error(user_id, "INVALID_EVENT", "Unsupported event type")
+        except ConversationAccessError:
+            await self._send_error(
+                user_id,
+                "CONVERSATION_NOT_FOUND",
+                "Conversation not found",
+            )
 
     async def _handle_chat_message(self, user_id: str, data: dict):
         conversation_id = data.get("conversation_id")
         content = data.get("content")
+        conversation = await self.access.require_member(conversation_id, user_id)
+
+        if not isinstance(content, str) or not content.strip() or len(content) > 4000:
+            await self._send_error(user_id, "INVALID_MESSAGE", "Invalid message content")
+            return
+        content = content.strip()
 
         # Save human message
         msg = await self.chat_service.send_message(
@@ -41,10 +61,7 @@ class ChatHandler:
         )
 
         # Send only to conversation participants (privacy-safe)
-        conv = await self.chat_service.get_conversation(conversation_id)
-        recipient_ids = []
-        if conv:
-            recipient_ids = [str(conv.participant_a_id), str(conv.participant_b_id)]
+        recipient_ids = self.access.participant_ids(conversation)
 
         await manager.send_to_users({
             "type": "message",
@@ -100,10 +117,8 @@ class ChatHandler:
 
     async def _handle_typing(self, user_id: str, data: dict):
         conversation_id = data.get("conversation_id")
-        conv = await self.chat_service.get_conversation(conversation_id)
-        recipient_ids = []
-        if conv:
-            recipient_ids = [str(conv.participant_a_id), str(conv.participant_b_id)]
+        conversation = await self.access.require_member(conversation_id, user_id)
+        recipient_ids = self.access.participant_ids(conversation)
 
         await manager.send_to_users({
             "type": "typing",
@@ -113,4 +128,17 @@ class ChatHandler:
         }, recipient_ids)
 
     async def _handle_read_receipt(self, user_id: str, data: dict):
-        pass
+        conversation_id = data.get("conversation_id")
+        await self.access.require_member(conversation_id, user_id)
+        await self._send_error(user_id, "NOT_IMPLEMENTED", "Read receipts are not available yet")
+
+    @staticmethod
+    async def _send_error(user_id: str, code: str, message: str) -> None:
+        await manager.send_personal_message(
+            {
+                "type": "error",
+                "code": code,
+                "message": message,
+            },
+            user_id,
+        )

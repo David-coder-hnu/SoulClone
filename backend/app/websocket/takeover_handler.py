@@ -1,20 +1,20 @@
 from app.websocket.manager import manager
 from app.services.chat_service import ChatService
+from app.services.conversation_access_service import ConversationAccessService
 
 
 class TakeoverHandler:
     def __init__(self, db):
         self.db = db
         self.chat_service = ChatService(db)
+        self.access = ConversationAccessService(db)
 
     async def handle_takeover(self, user_id: str, data: dict):
         action = data.get("action")
         conversation_id = data.get("conversation_id")
 
-        conv = await self.chat_service.get_conversation(conversation_id)
-        recipient_ids = []
-        if conv:
-            recipient_ids = [str(conv.participant_a_id), str(conv.participant_b_id)]
+        conversation = await self.access.require_member(conversation_id, user_id)
+        recipient_ids = self.access.participant_ids(conversation)
 
         if action == "enter":
             takeover = await self.chat_service.start_takeover(

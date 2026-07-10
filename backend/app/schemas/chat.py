@@ -1,7 +1,7 @@
 from datetime import datetime
 from uuid import UUID
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, field_validator
 
 
 class ConversationOut(BaseModel):
@@ -26,8 +26,16 @@ class ConversationOut(BaseModel):
 
 
 class MessageCreate(BaseModel):
-    content: str
+    content: str = Field(min_length=1, max_length=4000)
     content_type: str = "text"
+
+    @field_validator("content")
+    @classmethod
+    def content_must_not_be_blank(cls, value: str) -> str:
+        value = value.strip()
+        if not value:
+            raise ValueError("Message content must not be blank")
+        return value
 
 
 class MessageOut(BaseModel):

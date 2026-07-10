@@ -94,7 +94,11 @@ async def websocket_chat(websocket: WebSocket, token: str = Query(...)):
     try:
         from app.core.security import decode_token
         payload = decode_token(token)
-        if not payload or "sub" not in payload:
+        if (
+            not payload
+            or "sub" not in payload
+            or payload.get("type") != "access"
+        ):
             await websocket.close(code=4001, reason="Unauthorized")
             return
         user_id = payload["sub"]
