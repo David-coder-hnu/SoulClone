@@ -43,6 +43,8 @@ async def get_messages(
             "content": msg.content,
             "content_type": msg.content_type,
             "is_read": msg.is_read,
+            "read_at": msg.read_at.isoformat() if msg.read_at else None,
+            "delivery_status": msg.delivery_status,
             "emotion_tag": msg.emotion_tag,
             "created_at": msg.created_at.isoformat() if msg.created_at else None,
         }

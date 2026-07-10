@@ -225,3 +225,59 @@ async def test_websocket_message_is_idempotent_and_acknowledged(
     assert first_ack["client_message_id"] == client_message_id
     assert first_ack["duplicate"] is False
     assert second_ack["duplicate"] is True
+
+
+@pytest.mark.asyncio
+async def test_read_receipt_marks_incoming_messages_and_is_idempotent(
+    client,
+    monkeypatch,
+):
+    context = await _create_three_users_and_conversation(client)
+    conversation_id = context["conversation_id"]
+    first = await client.post(
+        f"/api/v1/messages/{conversation_id}",
+        headers=_auth(context["token_a"]),
+        json={"content": "first unread"},
+    )
+    second = await client.post(
+        f"/api/v1/messages/{conversation_id}",
+        headers=_auth(context["token_a"]),
+        json={"content": "second unread"},
+    )
+    assert first.status_code == second.status_code == 200
+
+    send_to_users = AsyncMock()
+    monkeypatch.setattr(
+        "app.websocket.chat_handler.manager.send_to_users",
+        send_to_users,
+    )
+    receipt = {
+        "type": "read_receipt",
+        "conversation_id": conversation_id,
+        "message_id": second.json()["id"],
+    }
+
+    async with async_session() as db:
+        handler = ChatHandler(db)
+        await handler.handle_message(context["user_b"], receipt)
+        await handler.handle_message(context["user_b"], receipt)
+        result = await db.execute(
+            select(Message)
+            .where(Message.conversation_id == uuid.UUID(conversation_id))
+            .order_by(Message.created_at.asc())
+        )
+        messages = result.scalars().all()
+
+    assert len(messages) == 2
+    assert all(message.is_read for message in messages)
+    assert all(message.read_at is not None for message in messages)
+    assert all(message.delivery_status == "read" for message in messages)
+    assert send_to_users.await_count == 2
+    first_receipt = send_to_users.await_args_list[0].args[0]
+    repeated_receipt = send_to_users.await_args_list[1].args[0]
+    assert first_receipt["type"] == "read_receipt"
+    assert set(first_receipt["message_ids"]) == {
+        first.json()["id"],
+        second.json()["id"],
+    }
+    assert repeated_receipt["message_ids"] == []

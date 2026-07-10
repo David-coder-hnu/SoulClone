@@ -1,4 +1,4 @@
-import { useEffect, useRef, useCallback } from 'react'
+import { useEffect, useRef, useCallback, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useAuthStore } from '@/stores/authStore'
 import { playSound } from '@/lib/sound'
@@ -26,8 +26,17 @@ interface AckPayload {
   type: 'ack'
   client_message_id: string
   server_message_id: string
-  status: 'persisted'
+  status: 'persisted' | 'delivered' | 'read'
   duplicate: boolean
+}
+
+interface ReadReceiptPayload {
+  type: 'read_receipt'
+  conversation_id: string
+  read_by: string
+  read_through_message_id: string
+  message_ids: string[]
+  read_at: string
 }
 
 const MAX_RECONNECT_ATTEMPTS = 5
@@ -37,6 +46,7 @@ export function useChatWebSocket(conversationId: string) {
   const ws = useRef<WebSocket | null>(null)
   const reconnectAttempts = useRef(0)
   const reconnectTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const [isConnected, setIsConnected] = useState(false)
   const queryClient = useQueryClient()
   const { token } = useAuthStore()
 
@@ -50,12 +60,17 @@ export function useChatWebSocket(conversationId: string) {
 
       socket.onopen = () => {
         console.log('[WS] Chat connected')
+        setIsConnected(true)
         reconnectAttempts.current = 0
       }
 
       socket.onmessage = (event) => {
         try {
-          const data = JSON.parse(event.data) as ChatMessagePayload | TypingPayload | AckPayload
+          const data = JSON.parse(event.data) as
+            | ChatMessagePayload
+            | TypingPayload
+            | AckPayload
+            | ReadReceiptPayload
           if (data.type === 'message' && data.conversation_id === conversationId) {
             playSound('receive-message')
             // Append incoming message to React Query cache
@@ -80,6 +95,21 @@ export function useChatWebSocket(conversationId: string) {
                 return [...old, msg]
               }
             )
+          } else if (data.type === 'read_receipt' && data.conversation_id === conversationId) {
+            const readIds = new Set(data.message_ids)
+            queryClient.setQueryData<Message[]>(
+              ['messages', conversationId],
+              (old) => old?.map((message) =>
+                readIds.has(message.id)
+                  ? {
+                      ...message,
+                      is_read: true,
+                      read_at: data.read_at,
+                      delivery_status: 'read',
+                    }
+                  : message
+              ) || []
+            )
           }
         } catch {
           // ignore non-JSON
@@ -88,6 +118,7 @@ export function useChatWebSocket(conversationId: string) {
 
       socket.onclose = () => {
         console.log('[WS] Chat disconnected')
+        setIsConnected(false)
         ws.current = null
         // Exponential backoff reconnection
         if (reconnectAttempts.current < MAX_RECONNECT_ATTEMPTS) {
@@ -102,6 +133,7 @@ export function useChatWebSocket(conversationId: string) {
 
       socket.onerror = (err) => {
         console.error('[WS] Chat error', err)
+        setIsConnected(false)
         socket.close()
       }
     }
@@ -155,5 +187,22 @@ export function useChatWebSocket(conversationId: string) {
     [conversationId]
   )
 
-  return { sendMessage, sendTyping }
+  const sendReadReceipt = useCallback(
+    (messageId: string) => {
+      if (ws.current?.readyState === WebSocket.OPEN) {
+        ws.current.send(
+          JSON.stringify({
+            type: 'read_receipt',
+            conversation_id: conversationId,
+            message_id: messageId,
+          })
+        )
+        return true
+      }
+      return false
+    },
+    [conversationId]
+  )
+
+  return { sendMessage, sendTyping, sendReadReceipt, isConnected }
 }

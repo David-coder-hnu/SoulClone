@@ -10,6 +10,8 @@ export interface Message {
   content: string
   content_type: string
   is_read: boolean
+  read_at?: string | null
+  delivery_status?: 'persisted' | 'delivered' | 'read' | 'failed'
   emotion_tag: string | null
   created_at: string
 }

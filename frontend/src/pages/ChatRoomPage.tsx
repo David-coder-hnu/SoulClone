@@ -33,7 +33,11 @@ export default function ChatRoomPage() {
     error: msgError,
   } = useMessages(conversationId || '')
 
-  const { sendMessage: sendWsMessage } = useChatWebSocket(conversationId || '')
+  const {
+    sendMessage: sendWsMessage,
+    sendReadReceipt,
+    isConnected,
+  } = useChatWebSocket(conversationId || '')
 
   const [input, setInput] = useState('')
   const [isManualMode, setIsManualMode] = useState(false)
@@ -41,10 +45,26 @@ export default function ChatRoomPage() {
   const [isTyping] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+  const lastReadReceiptRef = useRef<string | null>(null)
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
+
+  useEffect(() => {
+    const latestUnreadIncoming = [...(messages || [])]
+      .reverse()
+      .find((message) => message.sender_id !== user?.id && !message.is_read)
+    if (
+      isConnected
+      &&
+      latestUnreadIncoming
+      && latestUnreadIncoming.id !== lastReadReceiptRef.current
+      && sendReadReceipt(latestUnreadIncoming.id)
+    ) {
+      lastReadReceiptRef.current = latestUnreadIncoming.id
+    }
+  }, [messages, user?.id, sendReadReceipt, isConnected])
 
   const sendMessage = useCallback(() => {
     if (!input.trim() || !conversationId) return

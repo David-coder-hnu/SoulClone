@@ -204,6 +204,46 @@ class ChatService:
         )
         return result.scalar_one_or_none()
 
+    async def mark_read_through(
+        self,
+        conversation_id: str | uuid.UUID,
+        reader_id: str | uuid.UUID,
+        message_id: str | uuid.UUID,
+    ) -> tuple[list[uuid.UUID], datetime]:
+        conversation_uuid = self._as_uuid(conversation_id)
+        reader_uuid = self._as_uuid(reader_id)
+        message_uuid = self._as_uuid(message_id)
+
+        cursor_result = await self.db.execute(
+            select(Message).where(
+                Message.id == message_uuid,
+                Message.conversation_id == conversation_uuid,
+            )
+        )
+        cursor = cursor_result.scalar_one_or_none()
+        if cursor is None:
+            raise ValueError("Message cursor not found")
+
+        unread_result = await self.db.execute(
+            select(Message).where(
+                Message.conversation_id == conversation_uuid,
+                Message.sender_id != reader_uuid,
+                Message.created_at <= cursor.created_at,
+                Message.is_read.is_(False),
+            )
+        )
+        unread_messages = unread_result.scalars().all()
+        read_at = datetime.now(timezone.utc)
+        for message in unread_messages:
+            message.is_read = True
+            message.read_at = read_at
+            message.delivery_status = "read"
+
+        if unread_messages:
+            await self.db.commit()
+
+        return [message.id for message in unread_messages], read_at
+
     async def start_takeover(self, conversation_id: str, user_id: str, clone_id: str | None = None) -> Takeover:
         user_uuid = self._as_uuid(user_id)
         takeover = Takeover(

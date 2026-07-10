@@ -72,7 +72,7 @@ class ChatHandler:
                 "type": "ack",
                 "client_message_id": str(event.client_message_id),
                 "server_message_id": str(msg.id),
-                "status": "persisted",
+                "status": msg.delivery_status,
                 "duplicate": not created,
             },
             user_id,
@@ -96,6 +96,9 @@ class ChatHandler:
                 "created_at": msg.created_at.isoformat() if msg.created_at else None,
             },
         }, recipient_ids)
+
+        msg.delivery_status = "delivered"
+        await self.db.commit()
 
         # Trigger clone reply if the other participant has an active clone
         await self._trigger_clone_reply_if_needed(conversation_id, user_id, content)
@@ -152,8 +155,28 @@ class ChatHandler:
 
     async def _handle_read_receipt(self, user_id: str, event: ReadReceiptEvent):
         conversation_id = event.conversation_id
-        await self.access.require_member(conversation_id, user_id)
-        await self._send_error(user_id, "NOT_IMPLEMENTED", "Read receipts are not available yet")
+        conversation = await self.access.require_member(conversation_id, user_id)
+        try:
+            message_ids, read_at = await self.chat_service.mark_read_through(
+                conversation_id=conversation_id,
+                reader_id=user_id,
+                message_id=event.message_id,
+            )
+        except ValueError:
+            await self._send_error(user_id, "MESSAGE_NOT_FOUND", "Message not found")
+            return
+
+        await manager.send_to_users(
+            {
+                "type": "read_receipt",
+                "conversation_id": str(conversation_id),
+                "read_by": user_id,
+                "read_through_message_id": str(event.message_id),
+                "message_ids": [str(message_id) for message_id in message_ids],
+                "read_at": read_at.isoformat(),
+            },
+            self.access.participant_ids(conversation),
+        )
 
     @staticmethod
     async def _send_error(user_id: str, code: str, message: str) -> None:
