@@ -1,9 +1,10 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
+import { useQueryClient } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   ArrowLeft, Send, Sparkles, User, Phone,
-  Hand, MoreHorizontal
+  Hand, MoreHorizontal, ShieldAlert, Check, X
 } from 'lucide-react'
 import { formatDate } from '@/lib/utils'
 import { Avatar } from '@/components/ui/Avatar'
@@ -15,10 +16,21 @@ import { useChatWebSocket } from '@/hooks/useChatWebSocket'
 import { playSound } from '@/lib/sound'
 import { ErrorState, LoadingSpinner } from '@/components/shared/DataStates'
 import AmbientBackground from '@/components/shared/AmbientBackground'
+import { api } from '@/lib/api'
+
+interface PendingCloneReply {
+  job_id: string
+  conversation_id: string
+  risk_level: 'L1' | 'L2'
+  risk_categories: string[]
+  draft_content: string
+  approval_expires_at: string
+}
 
 export default function ChatRoomPage() {
   const { conversationId } = useParams<{ conversationId: string }>()
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const { user } = useAuthStore()
 
   const {
@@ -38,12 +50,15 @@ export default function ChatRoomPage() {
     sendReadReceipt,
     sendControl,
     controlMode,
+    approvalRevision,
     isConnected,
   } = useChatWebSocket(conversationId || '')
 
   const [input, setInput] = useState('')
   const [showModeHint, setShowModeHint] = useState(false)
   const [isTyping] = useState(false)
+  const [pendingReply, setPendingReply] = useState<PendingCloneReply | null>(null)
+  const [isReviewing, setIsReviewing] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const lastReadReceiptRef = useRef<string | null>(null)
@@ -81,6 +96,34 @@ export default function ChatRoomPage() {
     return () => clearTimeout(timer)
   }, [controlMode])
 
+  useEffect(() => {
+    if (!conversationId) return
+    let cancelled = false
+    api.get<{ items: PendingCloneReply[] }>('/clone-reply-jobs/pending')
+      .then(({ data }) => {
+        if (!cancelled) {
+          setPendingReply(
+            data.items.find((item) => item.conversation_id === conversationId) || null
+          )
+        }
+      })
+      .catch(() => undefined)
+    return () => {
+      cancelled = true
+    }
+  }, [conversationId, approvalRevision, isConnected])
+
+  useEffect(() => {
+    if (!pendingReply) return
+    const remaining = new Date(pendingReply.approval_expires_at).getTime() - Date.now()
+    if (remaining <= 0) {
+      setPendingReply(null)
+      return
+    }
+    const timer = setTimeout(() => setPendingReply(null), remaining)
+    return () => clearTimeout(timer)
+  }, [pendingReply])
+
   const sendMessage = useCallback(() => {
     if (!input.trim() || !conversationId) return
     const content = input.trim()
@@ -97,6 +140,31 @@ export default function ChatRoomPage() {
   const toggleMode = () => {
     const nextAction = isManualMode ? 'release' : 'takeover'
     sendControl(nextAction)
+  }
+
+  const reviewPendingReply = async (decision: 'approve' | 'reject') => {
+    if (!pendingReply || isReviewing) return
+    setIsReviewing(true)
+    try {
+      await api.post(`/clone-reply-jobs/${pendingReply.job_id}/review`, { decision })
+      setPendingReply(null)
+      if (decision === 'approve') {
+        await queryClient.invalidateQueries({ queryKey: ['messages', conversationId] })
+      }
+    } catch {
+      try {
+        const { data } = await api.get<{ items: PendingCloneReply[] }>(
+          '/clone-reply-jobs/pending'
+        )
+        setPendingReply(
+          data.items.find((item) => item.conversation_id === conversationId) || null
+        )
+      } catch {
+        // Keep the current draft when the refresh itself is unavailable.
+      }
+    } finally {
+      setIsReviewing(false)
+    }
   }
 
   const isLoading = convLoading || msgLoading
@@ -263,6 +331,43 @@ export default function ChatRoomPage() {
             className="px-4 py-2.5 bg-cyan-500/10 border-t border-cyan-400/20 text-center z-20"
           >
             <p className="text-accent-cyan text-sm font-medium">已切换为手动模式，现在由你亲自回复</p>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {pendingReply && (
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 16 }}
+            className="mx-4 mb-3 rounded-2xl border border-amber-400/25 bg-amber-500/10 p-3 z-20"
+          >
+            <div className="flex items-start gap-3">
+              <ShieldAlert size={18} className="text-amber-300 mt-0.5 shrink-0" />
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium text-amber-200">AI 草稿需要你的确认</p>
+                <p className="mt-1 text-sm text-text-secondary break-words">
+                  {pendingReply.draft_content}
+                </p>
+                <div className="mt-3 flex gap-2">
+                  <button
+                    onClick={() => reviewPendingReply('approve')}
+                    disabled={isReviewing}
+                    className="inline-flex items-center gap-1 rounded-lg bg-accent-cyan/15 px-3 py-1.5 text-xs text-accent-cyan disabled:opacity-40"
+                  >
+                    <Check size={13} /> 允许发送
+                  </button>
+                  <button
+                    onClick={() => reviewPendingReply('reject')}
+                    disabled={isReviewing}
+                    className="inline-flex items-center gap-1 rounded-lg bg-white/5 px-3 py-1.5 text-xs text-text-secondary disabled:opacity-40"
+                  >
+                    <X size={13} /> 拒绝
+                  </button>
+                </div>
+              </div>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>

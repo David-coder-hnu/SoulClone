@@ -70,6 +70,23 @@ interface ControlChangedPayload {
   reason: string | null
 }
 
+interface CloneReplyApprovalRequiredPayload {
+  type: 'clone_reply_approval_required'
+  job_id: string
+  conversation_id: string
+  risk_level: 'L1' | 'L2'
+  categories: string[]
+  expires_at: string
+}
+
+interface CloneReplyReviewedPayload {
+  type: 'clone_reply_reviewed'
+  job_id: string
+  conversation_id: string
+  decision: 'approved' | 'rejected'
+  status: string
+}
+
 const MAX_RECONNECT_ATTEMPTS = 5
 const INITIAL_RECONNECT_DELAY = 1000
 const HEARTBEAT_INTERVAL = 25_000
@@ -85,6 +102,7 @@ export function useChatWebSocket(conversationId: string) {
   const shouldReconnect = useRef(true)
   const [isConnected, setIsConnected] = useState(false)
   const [controlMode, setControlMode] = useState<ControlMode>('clone_active')
+  const [approvalRevision, setApprovalRevision] = useState(0)
   const queryClient = useQueryClient()
   const { token, user } = useAuthStore()
 
@@ -145,6 +163,8 @@ export function useChatWebSocket(conversationId: string) {
             | PongPayload
             | ConnectedPayload
             | ControlChangedPayload
+            | CloneReplyApprovalRequiredPayload
+            | CloneReplyReviewedPayload
           if (data.type === 'pong') {
             lastPongAt.current = Date.now()
           } else if (data.type === 'message' && data.conversation_id === conversationId) {
@@ -192,6 +212,12 @@ export function useChatWebSocket(conversationId: string) {
             && data.user_id === user?.id
           ) {
             setControlMode(data.mode)
+          } else if (
+            (data.type === 'clone_reply_approval_required'
+              || data.type === 'clone_reply_reviewed')
+            && data.conversation_id === conversationId
+          ) {
+            setApprovalRevision((revision) => revision + 1)
           }
         } catch {
           // ignore non-JSON
@@ -313,6 +339,7 @@ export function useChatWebSocket(conversationId: string) {
     sendReadReceipt,
     sendControl,
     controlMode,
+    approvalRevision,
     isConnected,
   }
 }

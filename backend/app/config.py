@@ -32,6 +32,7 @@ class Settings(BaseSettings):
     LLM_MAX_ATTEMPTS_PER_MODEL: int = 2
     LLM_RETRY_BASE_SECONDS: float = 1.0
     LLM_MODEL_COSTS_JSON: str = "{}"
+    AI_APPROVAL_TTL_SECONDS: int = 600
 
     CORS_ORIGINS: str = "http://localhost:5173"
     MAX_UPLOAD_SIZE_MB: int = 10

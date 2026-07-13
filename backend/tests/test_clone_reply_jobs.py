@@ -2,12 +2,14 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime, timedelta, timezone
+from types import SimpleNamespace
 from unittest.mock import AsyncMock, Mock
 
 import pytest
 from sqlalchemy import func, select
 
 from app.ai.llm_client import LLMGatewayError
+from app.ai.safety import AIRiskPolicy
 from app.core.tasks import _run_clone_reply_job
 from app.db.session import async_session
 from app.models.clone import Clone
@@ -160,10 +162,12 @@ async def test_clone_reply_job_completes_once_across_duplicate_delivery(
         status_callback,
         client_message_id,
         trace_id,
+        safety_callback,
     ):
         assert incoming_message == "queued hello"
         assert client_message_id == uuid.UUID(job_id)
         assert trace_id is not None
+        await safety_callback(AIRiskPolicy().assess("background reply"))
         for status in (
             "context_loading",
             "generating",
@@ -357,3 +361,33 @@ async def test_gateway_error_code_is_preserved_on_reply_job(client, monkeypatch)
     assert job.status == "failed"
     assert job.error_code == "timeout"
     assert job.error_message == "all providers timed out"
+
+
+@pytest.mark.asyncio
+async def test_exhausted_worker_retries_move_job_to_dead_letter(client, monkeypatch):
+    context = await _create_context(client)
+    job_id = await _create_source_and_job(context)
+    monkeypatch.setattr(
+        CloneBridge,
+        "generate_and_send_clone_reply",
+        AsyncMock(side_effect=RuntimeError("permanent pipeline failure")),
+    )
+    monkeypatch.setattr(
+        "app.core.realtime_events.publish_to_users",
+        AsyncMock(),
+    )
+    celery_self = SimpleNamespace(
+        request=SimpleNamespace(retries=2),
+        max_retries=2,
+    )
+
+    with pytest.raises(RuntimeError, match="permanent pipeline failure"):
+        await _run_clone_reply_job(job_id, celery_self=celery_self)
+
+    async with async_session() as db:
+        job = await db.get(CloneReplyJob, uuid.UUID(job_id))
+
+    assert job.status == "dead_lettered"
+    assert job.error_code == "generation_failed"
+    assert job.completed_at is not None
+    assert job.lease_expires_at is None

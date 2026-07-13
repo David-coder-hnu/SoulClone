@@ -43,6 +43,7 @@ async def _run_clone_reply_job(
 
     from app.core.realtime_events import publish_to_users
     from app.ai.llm_client import LLMGatewayError
+    from app.ai.safety import UnsafeReplyBlocked, UnsafeReplyRequiresApproval
     from app.db.session import async_session
     from app.models.clone import Clone
     from app.models.conversation import Conversation
@@ -85,7 +86,10 @@ async def _run_clone_reply_job(
             str(conversation.participant_b_id),
         ]
 
-        async def publish_status(status: str) -> None:
+        async def publish_status(
+            status: str,
+            recipients: list[str] | None = None,
+        ) -> None:
             await publish_to_users(
                 {
                     "type": "clone_reply_status",
@@ -95,7 +99,7 @@ async def _run_clone_reply_job(
                     "attempt_count": job.attempt_count,
                     "trace_id": str(job.trace_id),
                 },
-                participant_ids,
+                recipients or participant_ids,
             )
 
         try:
@@ -142,6 +146,9 @@ async def _run_clone_reply_job(
                 await jobs.set_status(job, status)
                 await publish_status(status)
 
+            async def record_safety(assessment) -> None:
+                await jobs.record_safety(job, assessment)
+
             reply = await bridge.generate_and_send_clone_reply(
                 clone_id=str(clone.id),
                 user_id=owner_user_id,
@@ -152,6 +159,7 @@ async def _run_clone_reply_job(
                 status_callback=update_status,
                 client_message_id=job.id,
                 trace_id=job.trace_id,
+                safety_callback=record_safety,
             )
             if reply is None:
                 allowed, _ = await ConversationControlService(
@@ -169,6 +177,25 @@ async def _run_clone_reply_job(
 
             await jobs.complete(job, reply.id)
             await publish_status("completed")
+        except UnsafeReplyRequiresApproval as exc:
+            await jobs.await_approval(job, exc.draft_content)
+            await publish_to_users(
+                {
+                    "type": "clone_reply_approval_required",
+                    "job_id": str(job.id),
+                    "conversation_id": str(job.conversation_id),
+                    "risk_level": exc.assessment.level,
+                    "categories": list(exc.assessment.categories),
+                    "expires_at": job.approval_expires_at.isoformat(),
+                },
+                [owner_user_id],
+            )
+            await publish_status("awaiting_approval", [owner_user_id])
+            return
+        except UnsafeReplyBlocked as exc:
+            await jobs.block_unsafe(job, exc.content)
+            await publish_status("blocked", [owner_user_id])
+            return
         except Exception as exc:
             is_gateway_error = isinstance(exc, LLMGatewayError)
             error_code = exc.code if is_gateway_error else "generation_failed"
@@ -194,6 +221,13 @@ async def _run_clone_reply_job(
             ):
                 countdown = 15 * (2 ** celery_self.request.retries)
                 raise celery_self.retry(countdown=countdown, exc=exc)
+            if celery_self is not None:
+                await jobs.dead_letter(
+                    job,
+                    error_code=error_code,
+                    error_message=str(exc),
+                )
+                await publish_status("dead_lettered")
             raise
 
 

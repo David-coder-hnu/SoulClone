@@ -19,6 +19,13 @@ from app.ai.clone_engine.memory_manager import MemoryManager
 from app.models.clone_profile import CloneProfile
 from app.models.clone import Clone
 from app.services.conversation_control_service import ConversationControlService
+from app.ai.safety import (
+    AIRiskPolicy,
+    RiskAssessment,
+    SafetyAction,
+    UnsafeReplyBlocked,
+    UnsafeReplyRequiresApproval,
+)
 
 
 class CloneBridge:
@@ -28,6 +35,7 @@ class CloneBridge:
         self.db = db
         self.chat_service = ChatService(db)
         self.control = ConversationControlService(db)
+        self.safety = AIRiskPolicy()
         self.generator = ResponseGenerator()
         self.emotion = EmotionSimulator(db=db)
         self.memory = MemoryManager(db=db)
@@ -79,6 +87,7 @@ class CloneBridge:
         status_callback: Callable[[str], Awaitable[None]] | None = None,
         client_message_id: str | uuid.UUID | None = None,
         trace_id: str | uuid.UUID | None = None,
+        safety_callback: Callable[[RiskAssessment], Awaitable[None]] | None = None,
     ):
         """
         Full clone reply pipeline:
@@ -160,6 +169,18 @@ class CloneBridge:
             user_id=user_id,
             trace_id=trace_id,
         )
+
+        assessment = self.safety.assess(
+            response_text,
+            intimacy_score=float(relationship_context.get("intimacy_level", 0)),
+            autonomy_level=profile.autonomy_level,
+        )
+        if safety_callback:
+            await safety_callback(assessment)
+        if assessment.action == SafetyAction.BLOCK:
+            raise UnsafeReplyBlocked(assessment, response_text)
+        if assessment.action == SafetyAction.REQUIRE_APPROVAL:
+            raise UnsafeReplyRequiresApproval(assessment, response_text)
 
         # 8. Apply reply delay based on behavior rules and mood
         behavior_rules = profile.behavior_rules or {}

@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import uuid
+import hashlib
+from decimal import Decimal
 from datetime import datetime, timedelta, timezone
 
 from sqlalchemy import select
@@ -9,6 +11,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
 from app.models.clone_reply_job import CloneReplyJob
+from app.models.clone_action_log import CloneActionLog
+from app.ai.safety import RiskAssessment
 
 
 ACTIVE_JOB_STATUSES = {
@@ -20,6 +24,11 @@ ACTIVE_JOB_STATUSES = {
     "delivering",
 }
 TERMINAL_JOB_STATUSES = {"completed", "cancelled"}
+NON_CLAIMABLE_JOB_STATUSES = TERMINAL_JOB_STATUSES | {
+    "awaiting_approval",
+    "blocked",
+    "dead_lettered",
+}
 JOB_LEASE_SECONDS = 660
 
 
@@ -75,7 +84,7 @@ class CloneReplyJobService:
             .execution_options(populate_existing=True)
         )
         job = result.scalar_one_or_none()
-        if job is None or job.status in TERMINAL_JOB_STATUSES:
+        if job is None or job.status in NON_CLAIMABLE_JOB_STATUSES:
             return None
         now = datetime.now(timezone.utc)
         if job.status in ACTIVE_JOB_STATUSES:
@@ -140,6 +149,20 @@ class CloneReplyJobService:
         job.lease_expires_at = None
         await self.db.commit()
 
+    async def dead_letter(
+        self,
+        job: CloneReplyJob,
+        *,
+        error_code: str,
+        error_message: str,
+    ) -> None:
+        job.status = "dead_lettered"
+        job.error_code = error_code[:50]
+        job.error_message = error_message[:2000]
+        job.completed_at = datetime.now(timezone.utc)
+        job.lease_expires_at = None
+        await self.db.commit()
+
     async def mark_queue_unavailable(
         self,
         job: CloneReplyJob,
@@ -148,6 +171,149 @@ class CloneReplyJobService:
         # Keep the job queued so a compensating dispatcher can retry it later.
         job.error_code = "queue_unavailable"
         job.error_message = error_message[:2000]
+        await self.db.commit()
+
+    async def record_safety(
+        self,
+        job: CloneReplyJob,
+        assessment: RiskAssessment,
+    ) -> None:
+        categories = list(assessment.categories)
+        is_new_assessment = (
+            job.risk_level != assessment.level
+            or job.risk_categories != categories
+        )
+        job.risk_level = assessment.level
+        job.risk_categories = categories
+        job.risk_confidence = Decimal(str(assessment.confidence))
+        job.safety_reason = ",".join(assessment.reasons)
+        if assessment.level != "L0" and is_new_assessment:
+            self.db.add(
+                CloneActionLog(
+                    clone_id=job.clone_id,
+                    action_type="reply_safety_review",
+                    description=f"AI reply classified as {assessment.level}",
+                    action_metadata={
+                        "job_id": str(job.id),
+                        "risk_level": assessment.level,
+                        "categories": categories,
+                        "confidence": assessment.confidence,
+                        "action": assessment.action.value,
+                    },
+                )
+            )
+        await self.db.commit()
+
+    async def await_approval(
+        self,
+        job: CloneReplyJob,
+        draft_content: str,
+    ) -> None:
+        now = datetime.now(timezone.utc)
+        job.status = "awaiting_approval"
+        job.approval_status = "pending"
+        job.approval_expires_at = now + timedelta(
+            seconds=settings.AI_APPROVAL_TTL_SECONDS
+        )
+        job.draft_content = draft_content
+        job.content_hash = self._content_hash(draft_content)
+        job.lease_expires_at = None
+        await self.db.commit()
+
+    async def block_unsafe(
+        self,
+        job: CloneReplyJob,
+        content: str,
+    ) -> None:
+        job.status = "blocked"
+        job.approval_status = "blocked"
+        job.content_hash = self._content_hash(content)
+        # L3 content can contain secrets; never persist the generated plaintext.
+        job.draft_content = None
+        job.cancelled_at = datetime.now(timezone.utc)
+        job.cancel_reason = "safety_policy_blocked"
+        job.lease_expires_at = None
+        await self.db.commit()
+
+    async def reject(
+        self,
+        job: CloneReplyJob,
+        reviewed_by_user_id: str | uuid.UUID,
+        reason: str = "user_rejected",
+    ) -> None:
+        job.status = "cancelled"
+        job.approval_status = "rejected"
+        job.reviewed_at = datetime.now(timezone.utc)
+        job.reviewed_by_user_id = self._as_uuid(reviewed_by_user_id)
+        job.cancelled_at = job.reviewed_at
+        job.cancel_reason = reason
+        job.draft_content = None
+        job.lease_expires_at = None
+        self.db.add(
+            CloneActionLog(
+                clone_id=job.clone_id,
+                action_type="reply_review_decision",
+                description="User rejected AI reply draft",
+                action_metadata={
+                    "job_id": str(job.id),
+                    "decision": "rejected",
+                    "risk_level": job.risk_level,
+                },
+            )
+        )
+        await self.db.commit()
+
+    async def approve(
+        self,
+        job: CloneReplyJob,
+        reviewed_by_user_id: str | uuid.UUID,
+        reply_message_id: str | uuid.UUID,
+    ) -> None:
+        job.status = "completed"
+        job.approval_status = "approved"
+        job.reviewed_at = datetime.now(timezone.utc)
+        job.reviewed_by_user_id = self._as_uuid(reviewed_by_user_id)
+        job.reply_message_id = self._as_uuid(reply_message_id)
+        job.completed_at = job.reviewed_at
+        job.draft_content = None
+        job.lease_expires_at = None
+        self.db.add(
+            CloneActionLog(
+                clone_id=job.clone_id,
+                action_type="reply_review_decision",
+                description="User approved AI reply draft",
+                action_metadata={
+                    "job_id": str(job.id),
+                    "decision": "approved",
+                    "risk_level": job.risk_level,
+                    "reply_message_id": str(reply_message_id),
+                },
+            )
+        )
+        await self.db.commit()
+
+    async def expire_approval(self, job: CloneReplyJob) -> None:
+        now = datetime.now(timezone.utc)
+        job.status = "cancelled"
+        job.approval_status = "expired"
+        job.cancelled_at = now
+        job.cancel_reason = "approval_expired"
+        job.draft_content = None
+        job.lease_expires_at = None
+        await self.db.commit()
+
+    async def invalidate_approval(
+        self,
+        job: CloneReplyJob,
+        reason: str,
+    ) -> None:
+        now = datetime.now(timezone.utc)
+        job.status = "cancelled"
+        job.approval_status = "invalid"
+        job.cancelled_at = now
+        job.cancel_reason = reason[:100]
+        job.draft_content = None
+        job.lease_expires_at = None
         await self.db.commit()
 
     async def _get_by_source(
@@ -169,3 +335,7 @@ class CloneReplyJobService:
         if value.tzinfo is None:
             return value.replace(tzinfo=timezone.utc)
         return value.astimezone(timezone.utc)
+
+    @staticmethod
+    def _content_hash(content: str) -> str:
+        return hashlib.sha256(content.encode("utf-8")).hexdigest()

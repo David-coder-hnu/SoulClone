@@ -10,7 +10,7 @@ from sqlalchemy import text
 
 from app.config import settings
 from app.db.session import init_db
-from app.api.v1 import auth, users, distillation, clones, matches, conversations, messages, posts, feed, notifications, date_invites, calibration
+from app.api.v1 import auth, users, distillation, clones, matches, conversations, messages, posts, feed, notifications, date_invites, calibration, clone_reply_jobs
 from app.websocket.manager import manager
 from app.websocket.chat_handler import ChatHandler
 from app.core.redis_client import redis_client, close_redis
@@ -64,6 +64,11 @@ app.include_router(feed.router, prefix="/api/v1/feed", tags=["feed"])
 app.include_router(notifications.router, prefix="/api/v1/notifications", tags=["notifications"])
 app.include_router(date_invites.router, prefix="/api/v1/date-invites", tags=["date-invites"])
 app.include_router(calibration.router, prefix="/api/v1/calibration", tags=["calibration"])
+app.include_router(
+    clone_reply_jobs.router,
+    prefix="/api/v1/clone-reply-jobs",
+    tags=["clone-reply-jobs"],
+)
 
 
 @app.get("/health")
