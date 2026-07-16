@@ -22,7 +22,7 @@ const bentoItems = [
   {
     icon: <MessageCircle size={20} />,
     title: '替你聊天',
-    desc: '离线时代替你回复、培养关系',
+    desc: '替你完成初识，找到值得亲自投入的人',
     size: 'small',
   },
   {
@@ -39,8 +39,8 @@ const bentoItems = [
   },
   {
     icon: <Zap size={20} />,
-    title: '自动运行',
-    desc: '激活后 AI 克隆体独立社交',
+    title: '自动寻找',
+    desc: '激活后完成初识与噪声过滤',
     size: 'small',
   },
 ]
@@ -48,7 +48,7 @@ const bentoItems = [
 const protocols = [
   { icon: <Brain size={22} />, title: '人格探测', desc: '12道深度心理学问题，结合MBTI和大五人格模型。', accent: '#00f0ff' },
   { icon: <Fingerprint size={22} />, title: '风格学习', desc: 'AI 分析语气词、表情包习惯、回复节奏和幽默感。', accent: '#00f0ff' },
-  { icon: <Zap size={22} />, title: '自动运行', desc: '激活后，AI 克隆体在平台上独立社交、匹配、维系关系。', accent: '#00f0ff' },
+  { icon: <Zap size={22} />, title: '自动寻找', desc: '激活后，AI 克隆体完成初识和噪声过滤，达到关系阈值后请你亲自接管。', accent: '#00f0ff' },
 ]
 
 /* ───────── Hero Bento Demo Cards ───────── */
@@ -108,7 +108,7 @@ function HeroBentoDemo() {
           <div className="absolute -right-4 -top-4 w-16 h-16 bg-accent-cyan/5 rounded-full blur-xl group-hover:bg-accent-cyan/10 transition-colors" />
           <p className="text-xs text-text-tertiary mb-1">{stat.label}</p>
           <p className="text-xl font-bold text-text-primary font-mono">{stat.value}</p>
-          <p className="text-[10px] text-accent-cyan/60 mt-1 font-mono">{stat.sub}</p>
+          <p className="text-xs text-accent-cyan/60 mt-1 font-mono">{stat.sub}</p>
         </motion.div>
       ))}
     </div>
@@ -175,7 +175,7 @@ export default function LandingPage() {
 
             <HeroSubtitle delay={0.9}>
               <p className="text-text-secondary text-lg md:text-xl mb-10 max-w-md leading-relaxed drop-shadow-[0_1px_12px_rgba(0,0,0,0.5)]">
-                当你的数字分身在线上替你社交、培养关系时，
+                当你的数字分身替你穿过初识噪声、找到真正合拍的人时，
                 现实中的你正在做什么？
               </p>
             </HeroSubtitle>
@@ -208,7 +208,7 @@ export default function LandingPage() {
           transition={{ delay: 2.2 }}
           className="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2"
         >
-          <span className="text-text-disabled text-[10px] tracking-[0.2em] uppercase">Scroll</span>
+          <span className="text-text-disabled text-xs tracking-[0.2em] uppercase">Scroll</span>
           <motion.div animate={{ y: [0, 6, 0] }} transition={{ duration: 2, repeat: Infinity }}>
             <ChevronDown size={16} className="text-text-disabled" />
           </motion.div>

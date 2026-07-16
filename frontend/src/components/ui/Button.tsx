@@ -17,17 +17,17 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         'bg-cyan-500/10',
         'border border-cyan-400/30',
         'text-cyan-400',
-        'hover:bg-cyan-500/20 hover:shadow-[0_0_16px_rgba(0,240,255,0.3)]',
+        'hover:bg-cyan-500/20 hover:border-cyan-300/50',
         'active:scale-[0.98] active:bg-cyan-500/30',
-        'disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:shadow-none',
+        'disabled:opacity-30 disabled:cursor-not-allowed',
       ],
       secondary: [
         'bg-magenta-500/10',
         'border border-magenta-400/30',
         'text-magenta-400',
-        'hover:bg-magenta-500/20 hover:shadow-[0_0_16px_rgba(255,0,110,0.3)]',
+        'hover:bg-magenta-500/20 hover:border-magenta-300/50',
         'active:scale-[0.98]',
-        'disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:shadow-none',
+        'disabled:opacity-30 disabled:cursor-not-allowed',
       ],
       ghost: [
         'bg-transparent',
@@ -41,17 +41,17 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         'bg-gold-500/10',
         'border border-gold-400/30',
         'text-gold-400',
-        'hover:bg-gold-500/20 hover:shadow-[0_0_16px_rgba(255,190,11,0.3)]',
+        'hover:bg-gold-500/20 hover:border-gold-300/50',
         'active:scale-[0.98]',
-        'disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:shadow-none',
+        'disabled:opacity-30 disabled:cursor-not-allowed',
       ],
       danger: [
         'bg-error/10',
         'border border-error/30',
         'text-error',
-        'hover:bg-error/20 hover:shadow-[0_0_16px_rgba(255,23,68,0.3)]',
+        'hover:bg-error/20 hover:border-error/50',
         'active:scale-[0.98]',
-        'disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:shadow-none',
+        'disabled:opacity-30 disabled:cursor-not-allowed',
       ],
       link: [
         'bg-transparent border-0',
@@ -64,7 +64,7 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     }
 
     const sizeStyles = {
-      sm: 'h-8 px-3 text-[13px] rounded-full',
+      sm: 'h-8 px-3 text-sm rounded-full',
       md: 'h-10 px-6 text-sm rounded-full',
       lg: 'h-12 px-8 text-base rounded-full',
     }

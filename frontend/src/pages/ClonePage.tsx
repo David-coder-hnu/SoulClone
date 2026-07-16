@@ -9,7 +9,6 @@ import { Badge } from '@/components/ui/Badge'
 import { Card } from '@/components/ui/Card'
 import AmbientBackground from '@/components/shared/AmbientBackground'
 import BigFiveRadar from '@/components/shared/BigFiveRadar'
-import HandoverCeremony from '@/components/shared/HandoverCeremony'
 import { useCloneProfile } from '@/hooks/useCloneProfile'
 import { useCloneStats } from '@/hooks/useCloneStats'
 import { useCloneActivities } from '@/hooks/useCloneActivities'
@@ -33,14 +32,12 @@ export default function ClonePage() {
   const toggleActive = useToggleActive()
 
   const [autonomy, setAutonomy] = useState(stats?.autonomy_level ?? 7)
-  const [active, setActive] = useState(stats?.status === 'active')
-  const [showHandover, setShowHandover] = useState(false)
+  const active = stats?.status === 'active'
 
   // Sync local state with server data
   useEffect(() => {
     if (stats) {
       setAutonomy(stats.autonomy_level ?? 7)
-      setActive(stats.status === 'active')
     }
   }, [stats])
 
@@ -68,13 +65,7 @@ export default function ClonePage() {
   }
 
   const handleToggleActive = () => {
-    const next = !active
-    setActive(next)
-    toggleActive.mutate(next)
-    if (!next) {
-      // Going offline — trigger the handover ceremony
-      setShowHandover(true)
-    }
+    toggleActive.mutate(!active)
   }
 
   if (isLoading) {
@@ -136,7 +127,7 @@ export default function ClonePage() {
                     <Badge variant={active ? 'cyan' : 'default'} size="sm" className="mt-2">
                       {active
                         ? (stats?.total_conversations ?? 0) > 0
-                          ? `正在维护 ${stats?.total_conversations} 段关系`
+                          ? `正在了解 ${stats?.total_conversations} 段新连接`
                           : '自动运行中'
                         : '待命'}
                     </Badge>
@@ -265,8 +256,8 @@ export default function ClonePage() {
                       className="text-text-tertiary text-xs"
                     >
                       {autonomy <= 3 && '保守：只在收到消息时回复'}
-                      {autonomy > 3 && autonomy <= 7 && '平衡：会主动维护和推进关系'}
-                      {autonomy > 7 && '激进：非常主动，积极寻求新匹配'}
+                      {autonomy > 3 && autonomy <= 7 && '平衡：会主动了解新连接，达到阈值后提醒你接管'}
+                      {autonomy > 7 && '积极：更主动寻找新匹配，但不会替你维持关系'}
                     </motion.p>
                   </div>
                   </div>
@@ -401,13 +392,6 @@ export default function ClonePage() {
         </div>
       </AmbientBackground>
 
-      <HandoverCeremony
-        visible={showHandover}
-        userName="你"
-        twinName={stats?.name || '你的孪生'}
-        twinAvatar={null}
-        onComplete={() => setShowHandover(false)}
-      />
     </AppShell>
   )
 }

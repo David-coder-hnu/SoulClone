@@ -12,6 +12,8 @@ export interface Conversation {
   last_message_time: string
   unread: number
   intimacy: number
+  status: 'active' | 'paused' | 'ended'
+  relationshipStage: 'stranger' | 'acquaintance' | 'friend' | 'close' | 'intimate'
 }
 
 async function fetchConversations(): Promise<Conversation[]> {
@@ -28,6 +30,8 @@ async function fetchConversations(): Promise<Conversation[]> {
     last_message_time: conv.last_message_at || conv.created_at,
     unread: conv.unread_count || 0,
     intimacy: Math.round(conv.intimacy_score || 0),
+    status: conv.status || 'active',
+    relationshipStage: conv.relationship_stage || 'stranger',
   }))
 }
 

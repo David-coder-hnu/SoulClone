@@ -1,10 +1,11 @@
 import { ReactNode } from 'react'
-import { motion } from 'framer-motion'
+import { motion, useReducedMotion } from 'framer-motion'
 
 interface AmbientBackgroundProps {
   variant?: 'home' | 'discover' | 'chat' | 'feed' | 'profile' | 'clone' | 'calibration' | 'auth'
   intensity?: 'subtle' | 'normal' | 'rich'
   particles?: boolean
+  mesh?: boolean
   children: ReactNode
   className?: string
 }
@@ -72,24 +73,26 @@ export default function AmbientBackground({
   variant = 'home',
   intensity = 'normal',
   particles = true,
+  mesh = true,
   children,
   className = '',
 }: AmbientBackgroundProps) {
+  const reduceMotion = useReducedMotion()
   const colors = orbColors[variant] || orbColors.home
   const dim = intensityMap[intensity]
 
   return (
     <div className={`min-h-screen relative overflow-hidden bg-background ${className}`}>
       {/* Global mesh-gradient — always present */}
-      <div className="fixed inset-0 mesh-gradient pointer-events-none" />
+      {mesh && <div className="fixed inset-0 mesh-gradient pointer-events-none" />}
 
       {/* Floating particles — landing-page level atmosphere */}
-      {particles && <FloatingParticles color="rgba(0,240,255,0.25)" />}
+      {particles && !reduceMotion && <FloatingParticles color="rgba(0,240,255,0.25)" />}
 
       {/* Multiple ambient orbs — richer than single orb */}
       <div className="fixed inset-0 pointer-events-none z-[1]">
         <div
-          className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full animate-breathe"
+          className={`absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full ${reduceMotion ? '' : 'animate-breathe'}`}
           style={{
             width: dim.w,
             height: dim.h,
@@ -98,7 +101,7 @@ export default function AmbientBackground({
           }}
         />
         <div
-          className="absolute top-2/3 right-1/4 rounded-full animate-breathe"
+          className={`absolute top-2/3 right-1/4 rounded-full ${reduceMotion ? '' : 'animate-breathe'}`}
           style={{
             width: dim.w * 0.6,
             height: dim.h * 0.6,

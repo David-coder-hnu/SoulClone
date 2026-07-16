@@ -10,8 +10,8 @@ export function useToggleActive() {
       const { data } = await api.post(endpoint)
       return data
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['clone-stats'] })
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['clone-stats'] })
     },
   })
 }

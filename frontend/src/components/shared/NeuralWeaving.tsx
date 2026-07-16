@@ -9,9 +9,9 @@ const nodes = [
     color: '#00f0ff',
   },
   {
-    title: '替你培养感情',
-    subtitle: 'Emotional Cultivation',
-    desc: '你的在线状态会在你离线时继续聊天、匹配、培养关系。时机成熟时，它会邀请你批准下一步行动。',
+    title: '替你过滤初识',
+    subtitle: 'Signal Filtering',
+    desc: '你离线时，孪生会完成初识、匹配与噪声过滤。关系达到阈值后，它会退出并邀请你本人接管。',
     color: '#ff006e',
   },
   {

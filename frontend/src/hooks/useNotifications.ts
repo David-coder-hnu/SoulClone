@@ -40,7 +40,7 @@ export function useNotifications() {
     staleTime: 1000 * 30,
   })
 
-  const { data: unreadCount } = useQuery<number>({
+  const unreadQuery = useQuery<number>({
     queryKey: ['notifications', 'unread-count'],
     queryFn: fetchUnreadCount,
     staleTime: 1000 * 30,
@@ -67,7 +67,9 @@ export function useNotifications() {
 
   return {
     notifications: notifications || [],
-    unreadCount: unreadCount || 0,
+    unreadCount: unreadQuery.data ?? 0,
+    unreadCountError: unreadQuery.error,
+    unreadCountLoading: unreadQuery.isLoading,
     markAsRead,
     markAllAsRead,
     ...rest,
