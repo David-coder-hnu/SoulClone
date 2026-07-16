@@ -1,0 +1,282 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-07-16T02:43:22Z",
+  "title": "Design System: SoulClone",
+  "extensions": {
+    "colorMeta": {
+      "soul-void": {
+        "role": "neutral",
+        "displayName": "灵魂深空",
+        "canonical": "#050508",
+        "tonalRamp": ["#020203", "#050508", "#111118", "#292932", "#4A4A56", "#73737E", "#AFAFB7", "#EEEEF1"]
+      },
+      "dark-matter": {
+        "role": "neutral",
+        "displayName": "暗物质",
+        "canonical": "#0A0A10",
+        "tonalRamp": ["#030305", "#0A0A10", "#17171F", "#303039", "#50505B", "#7A7A85", "#B5B5BD", "#F0F0F2"]
+      },
+      "elevated-matter": {
+        "role": "neutral",
+        "displayName": "升起的暗物质",
+        "canonical": "#181820",
+        "tonalRamp": ["#070709", "#101015", "#181820", "#34343D", "#555560", "#7E7E89", "#B8B8C0", "#F1F1F3"]
+      },
+      "soul-white": {
+        "role": "neutral",
+        "displayName": "灵魂白",
+        "canonical": "#E8E8EC",
+        "tonalRamp": ["#1E1E22", "#3B3B40", "#5C5C62", "#808087", "#A7A7AD", "#C7C7CC", "#E8E8EC", "#F8F8F9"]
+      },
+      "quiet-silver": {
+        "role": "neutral",
+        "displayName": "静默银",
+        "canonical": "#8B8B9A",
+        "tonalRamp": ["#1C1C23", "#30303A", "#484854", "#62626F", "#7A7A88", "#9A9AA7", "#C1C1CA", "#ECECEF"]
+      },
+      "distant-silver": {
+        "role": "neutral",
+        "displayName": "远距银",
+        "canonical": "#6B6B7B",
+        "tonalRamp": ["#18181E", "#292931", "#3D3D48", "#53535F", "#6B6B7B", "#8E8E9B", "#B9B9C2", "#E8E8EC"]
+      },
+      "consciousness-cyan": {
+        "role": "primary",
+        "displayName": "意识连接",
+        "canonical": "#00F0FF",
+        "tonalRamp": ["#002326", "#003D42", "#005D63", "#00828B", "#00AAB5", "#00D4E0", "#00F0FF", "#B8FBFF"]
+      },
+      "relationship-magenta": {
+        "role": "secondary",
+        "displayName": "关系心跳",
+        "canonical": "#FF006E",
+        "tonalRamp": ["#2C0014", "#4C0022", "#730033", "#9D0046", "#C70057", "#E80064", "#FF2A83", "#FFD0E2"]
+      },
+      "handover-gold": {
+        "role": "tertiary",
+        "displayName": "真实交接",
+        "canonical": "#FFBE0B",
+        "tonalRamp": ["#2B2000", "#493600", "#6C5000", "#936D00", "#BB8B00", "#E0A500", "#FFBE0B", "#FFF0B5"]
+      },
+      "alive-green": {
+        "role": "semantic",
+        "displayName": "活跃绿",
+        "canonical": "#00E676",
+        "tonalRamp": ["#002814", "#004522", "#006833", "#008E46", "#00B65B", "#00D96E", "#37F390", "#C2FFDD"]
+      },
+      "caution-orange": {
+        "role": "semantic",
+        "displayName": "警示橙",
+        "canonical": "#FF9100",
+        "tonalRamp": ["#2D1900", "#4D2A00", "#743F00", "#9D5600", "#C96E00", "#EF8400", "#FFA52E", "#FFE0B0"]
+      },
+      "boundary-red": {
+        "role": "semantic",
+        "displayName": "边界红",
+        "canonical": "#FF1744",
+        "tonalRamp": ["#2D0008", "#4D000E", "#740016", "#9E001E", "#C90027", "#EF0A39", "#FF496B", "#FFD0D8"]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "灵魂面孔",
+        "purpose": "Landing 主标题、交接仪式与少数情感高潮。"
+      },
+      "headline": {
+        "displayName": "章节标题",
+        "purpose": "页面级标题与重要章节。"
+      },
+      "title": {
+        "displayName": "关系标题",
+        "purpose": "卡片标题、关系名称与内容区标题。"
+      },
+      "body": {
+        "displayName": "灵魂声音",
+        "purpose": "任务说明、叙述与长文本。"
+      },
+      "label": {
+        "displayName": "界面脉搏",
+        "purpose": "按钮、输入标签、导航与紧凑状态。"
+      },
+      "data": {
+        "displayName": "精确数据",
+        "purpose": "评分、置信度、时间与模型状态。"
+      }
+    },
+    "shadows": [
+      {
+        "name": "ambient-low",
+        "value": "0 0 8px rgba(0, 240, 255, 0.3)",
+        "purpose": "头像环、微小状态点和低强度反馈。"
+      },
+      {
+        "name": "interactive-cyan",
+        "value": "0 0 16px rgba(0, 240, 255, 0.4)",
+        "purpose": "Cyan 页面中的聚焦、悬停与选中状态。"
+      },
+      {
+        "name": "interactive-magenta",
+        "value": "0 0 16px rgba(255, 0, 110, 0.4)",
+        "purpose": "关系事件的聚焦、悬停与选中状态。"
+      },
+      {
+        "name": "floating-layer",
+        "value": "0 8px 32px rgba(0, 0, 0, 0.4)",
+        "purpose": "Floating Dock、Modal 与脱离页面流的表面。"
+      }
+    ],
+    "motion": [
+      {
+        "name": "ease-out-expo",
+        "value": "cubic-bezier(0.16, 1, 0.3, 1)",
+        "purpose": "页面进入和明显状态切换。"
+      },
+      {
+        "name": "ease-liquid",
+        "value": "cubic-bezier(0.4, 0, 0.2, 1)",
+        "purpose": "按钮、输入和容器的常规 150–250ms 反馈。"
+      },
+      {
+        "name": "breathe",
+        "value": "4s ease-in-out infinite",
+        "purpose": "在线、意识存在和关键环境光的低频呼吸；Reduced Motion 下禁用。"
+      }
+    ],
+    "breakpoints": [
+      { "name": "sm", "value": "640px" },
+      { "name": "md", "value": "768px" },
+      { "name": "lg", "value": "1024px" },
+      { "name": "xl", "value": "1280px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Connection Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "当前页面最重要的连接动作，安静停留，响应时发光。",
+      "html": "<button class=\"ds-btn-primary\">开始连接</button>",
+      "css": ".ds-btn-primary { height: 40px; padding: 0 24px; border: 1px solid rgba(0,240,255,.3); border-radius: 9999px; background: rgba(0,240,255,.1); color: #00F0FF; font: 500 14px/1.5 Inter, system-ui, sans-serif; letter-spacing: .02em; transition: background .2s cubic-bezier(.4,0,.2,1), border-color .2s cubic-bezier(.4,0,.2,1), transform .15s; } .ds-btn-primary:hover { background: rgba(0,240,255,.2); border-color: rgba(103,246,255,.5); } .ds-btn-primary:focus-visible { outline: 2px solid #00F0FF; outline-offset: 2px; } .ds-btn-primary:active { transform: scale(.98); } .ds-btn-primary:disabled { opacity: .3; cursor: not-allowed; }"
+    },
+    {
+      "name": "Ghost Button",
+      "kind": "button",
+      "refersTo": "button-ghost",
+      "description": "不与主操作竞争的次级动作。",
+      "html": "<button class=\"ds-btn-ghost\">稍后处理</button>",
+      "css": ".ds-btn-ghost { height: 40px; padding: 0 24px; border: 1px solid rgba(255,255,255,.15); border-radius: 9999px; background: transparent; color: #E8E8EC; font: 500 14px/1.5 Inter, system-ui, sans-serif; letter-spacing: .02em; transition: background .2s, border-color .2s, transform .15s; } .ds-btn-ghost:hover { background: rgba(255,255,255,.05); border-color: rgba(255,255,255,.25); } .ds-btn-ghost:focus-visible { outline: 2px solid #00F0FF; outline-offset: 2px; } .ds-btn-ghost:active { transform: scale(.98); }"
+    },
+    {
+      "name": "Default Input",
+      "kind": "input",
+      "refersTo": "input-default",
+      "description": "实体 Dark Matter 表面上的清晰任务输入。",
+      "html": "<label class=\"ds-field\"><span>你想寻找怎样的人？</span><input placeholder=\"写下真正重要的特质\"></label>",
+      "css": ".ds-field { display: grid; gap: 8px; color: #8B8B9A; font: 500 14px/1.5 Inter, system-ui, sans-serif; } .ds-field input { height: 44px; padding: 0 16px; border: 1px solid rgba(255,255,255,.1); border-radius: 8px; background: #0A0A10; color: #E8E8EC; font: 400 14px/1.5 Inter, system-ui, sans-serif; transition: border-color .2s, box-shadow .2s, background .2s; } .ds-field input::placeholder { color: #8B8B9A; } .ds-field input:hover { border-color: rgba(255,255,255,.15); } .ds-field input:focus { outline: none; border-color: rgba(0,240,255,.6); background: #0C0C12; box-shadow: 0 0 16px rgba(0,240,255,.4); }"
+    },
+    {
+      "name": "Relationship Search",
+      "kind": "input",
+      "refersTo": "input-default",
+      "description": "用于搜索关系和对话的胶囊输入。",
+      "html": "<label class=\"ds-search\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><circle cx=\"11\" cy=\"11\" r=\"7\"></circle><path d=\"m20 20-3.5-3.5\"></path></svg><input aria-label=\"搜索关系\" placeholder=\"搜索关系\"></label>",
+      "css": ".ds-search { position: relative; display: block; } .ds-search svg { position: absolute; left: 14px; top: 50%; width: 18px; height: 18px; transform: translateY(-50%); fill: none; stroke: #6B6B7B; stroke-width: 2; } .ds-search input { width: 100%; height: 44px; padding: 0 16px 0 40px; border: 1px solid rgba(255,255,255,.1); border-radius: 9999px; background: #0A0A10; color: #E8E8EC; font: 400 14px/1.5 Inter, system-ui, sans-serif; transition: border-color .2s, box-shadow .2s; } .ds-search input::placeholder { color: #8B8B9A; } .ds-search input:focus { outline: none; border-color: rgba(0,240,255,.6); box-shadow: 0 0 16px rgba(0,240,255,.4); }"
+    },
+    {
+      "name": "Flat Soul Card",
+      "kind": "card",
+      "refersTo": "card-flat",
+      "description": "产品内容的默认实体容器，不主动抢夺注意力。",
+      "html": "<article class=\"ds-card\"><h3>一段值得接管的关系</h3><p>孪生已经过滤噪声，现在轮到你亲自出现。</p></article>",
+      "css": ".ds-card { padding: 24px; border: 1px solid rgba(255,255,255,.06); border-radius: 16px; background: #0A0A10; color: #E8E8EC; transition: background .25s cubic-bezier(.4,0,.2,1), border-color .25s cubic-bezier(.4,0,.2,1); } .ds-card:hover { border-color: rgba(255,255,255,.1); background: #0C0C12; } .ds-card h3 { margin: 0 0 12px; font: 400 18px/1.3 Newsreader, serif; } .ds-card p { margin: 0; max-width: 65ch; color: #8B8B9A; font: 400 16px/1.7 Inter, system-ui, sans-serif; }"
+    },
+    {
+      "name": "Cyan Status Badge",
+      "kind": "chip",
+      "refersTo": "badge-cyan",
+      "description": "表达连接或孪生在线状态的紧凑标签。",
+      "html": "<span class=\"ds-badge-cyan\"><i></i>孪生在线</span>",
+      "css": ".ds-badge-cyan { display: inline-flex; height: 24px; align-items: center; gap: 6px; padding: 0 12px; border: 1px solid rgba(0,240,255,.3); border-radius: 9999px; background: rgba(0,240,255,.15); color: #00F0FF; font: 500 12px/1 Inter, system-ui, sans-serif; } .ds-badge-cyan i { width: 6px; height: 6px; border-radius: 50%; background: #00F0FF; box-shadow: 0 0 8px rgba(0,240,255,.5); }"
+    },
+    {
+      "name": "Floating Dock",
+      "kind": "nav",
+      "refersTo": "card-flat",
+      "description": "统一桌面和移动端的主导航星座。",
+      "html": "<nav class=\"ds-dock\" aria-label=\"主导航\"><a class=\"is-active\" href=\"#\" aria-current=\"page\">主页</a><a href=\"#\">发现</a><a href=\"#\">聊天</a><a href=\"#\">我的</a></nav>",
+      "css": ".ds-dock { display: inline-flex; gap: 4px; padding: 8px; border: 1px solid rgba(255,255,255,.08); border-radius: 16px; background: rgba(24,24,32,.6); box-shadow: 0 8px 32px rgba(0,0,0,.4); backdrop-filter: blur(24px) saturate(140%); } .ds-dock a { display: grid; min-width: 44px; min-height: 44px; place-items: center; border-radius: 12px; color: #8B8B9A; font: 500 12px/1 Inter, system-ui, sans-serif; text-decoration: none; transition: color .2s, background .2s; } .ds-dock a:hover { color: #E8E8EC; } .ds-dock a:focus-visible { outline: 2px solid #00F0FF; outline-offset: 2px; } .ds-dock a.is-active { background: rgba(0,240,255,.1); color: #00F0FF; box-shadow: 0 0 16px rgba(0,240,255,.2); }"
+    },
+    {
+      "name": "Twin Identity Avatar",
+      "kind": "custom",
+      "refersTo": "badge-cyan",
+      "description": "用语义圆环和状态点表达关系温度与孪生在线状态。",
+      "html": "<div class=\"ds-avatar\" role=\"img\" aria-label=\"孪生在线\"><span>AI</span><i></i></div>",
+      "css": ".ds-avatar { position: relative; width: 44px; height: 44px; padding: 2px; border: 2px solid #00F0FF; border-radius: 50%; background: #0A0A10; box-shadow: 0 0 8px rgba(0,240,255,.3); } .ds-avatar span { display: grid; width: 100%; height: 100%; place-items: center; border-radius: 50%; background: #0C0C12; color: #8B8B9A; font: 700 12px/1 Inter, system-ui, sans-serif; } .ds-avatar i { position: absolute; right: -2px; bottom: -2px; width: 10px; height: 10px; border: 2px solid #050508; border-radius: 50%; background: #00F0FF; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "Liquid Dark Matter（液态暗物质）",
+    "overview": "SoulClone 像一座深海中的灵魂仪表盘：深色空间安静承载关系，液态光线只在连接、心跳和交接发生时显现。它真诚、克制、神秘；视觉不试图证明 AI 有多强，而是让用户更清楚何时该把关系交还给真人。\n\n界面安静地存在，回应时才显露生命感。产品区以熟悉、直接的任务流为骨架，Landing 等品牌表面可以承担更强的沉浸感，但两者共享同一套色彩语义、字体声音和材质规则。系统明确拒绝千篇一律的 AI 或 SaaS 控制台、依赖无限滑动的游戏化交友软件，以及冰冷炫技、把人简化成数据的科幻工具。",
+    "keyCharacteristics": [
+      "深色明度层级构成稳定空间，饱和色只表达语义与状态。",
+      "Serif 展示字体承载灵魂与叙事，Inter 承载任务，等宽字体承载精确数据。",
+      "产品界面静止时克制，交互发生时才使用光晕、呼吸和液态反馈。",
+      "玻璃是悬浮层与意识材质，不是所有容器的默认装饰。",
+      "所有视觉高潮最终都服务于真人接管，而不是延长 AI 的存在。"
+    ],
+    "rules": [
+      {
+        "name": "The Semantic Color Rule",
+        "body": "每一次品牌色出现都必须回答“发生了什么状态变化”；如果答案只是“更好看”，删除它。",
+        "section": "colors"
+      },
+      {
+        "name": "The One Chapter Rule",
+        "body": "单个产品页面只允许一种品牌色主导，另外两种只能表达局部语义事件。",
+        "section": "colors"
+      },
+      {
+        "name": "The Gold Exit Rule",
+        "body": "Gold 优先标记校准完成、深度关系和真人接管，禁止把它降格为普通按钮颜色。",
+        "section": "colors"
+      },
+      {
+        "name": "The Three Voices Rule",
+        "body": "Serif 讲“人与关系”，Sans 讲“任务与操作”，Mono 讲“数字与状态”；禁止跨角色混用。",
+        "section": "typography"
+      },
+      {
+        "name": "The Quiet Interface Rule",
+        "body": "产品标签和按钮禁止使用 Display 字体，界面必须先可操作，再有气质。",
+        "section": "typography"
+      },
+      {
+        "name": "The Stillness First Rule",
+        "body": "静止状态禁止用大范围阴影证明层级；先使用表面明度，交互发生后才允许光出现。",
+        "section": "elevation"
+      },
+      {
+        "name": "The Glass Is Air Rule",
+        "body": "玻璃代表悬浮、意识或过渡，不代表普通内容；普通卡片必须保持实体和安静。",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do 让每个页面只由 Cyan、Magenta 或 Gold 中的一种颜色主导，并让颜色明确表达状态。",
+      "Do 在静止状态使用 Soul Void、Dark Matter、Elevated Matter 的明度层级，交互发生后再显示光晕。",
+      "Do 保证按钮、输入、导航具备 Hover、Focus、Active、Disabled 和 Error 等完整状态。",
+      "Do 为所有循环动画与大幅位移提供 prefers-reduced-motion 降级，并让声音始终可关闭。",
+      "Do 在关系达到交接条件时用 Gold 和清晰文案把注意力导向真人接管。",
+      "Do 保持正文对比度达到 WCAG 2.2 AA，并为触控操作提供至少 44px 的有效区域。"
+    ],
+    "donts": [
+      "Don't 做成“千篇一律的 AI 或 SaaS 控制台”；禁止默认侧栏、无意义指标卡阵列和装饰性渐变文字。",
+      "Don't 做成“依靠无限滑动和上瘾式匹配留住用户的游戏化交友软件”；禁止用无限 Feed、虚假稀缺或奖励连击制造停留。",
+      "Don't 做成“冰冷、炫技、把人简化成数据的科幻工具”；数据必须连接到可理解的人与关系结果。",
+      "Don't 在普通卡片上滥用玻璃、宽阴影、粒子或三色渐变；材质必须承担明确语义。",
+      "Don't 使用大于 1px 的彩色单侧边框、32px 以上的卡片圆角、装饰性网格背景或手绘感 AI SVG。",
+      "Don't 让 AI 视觉高潮压过真人接管；找到合拍的人之后，界面必须帮助孪生退出。"
+    ]
+  }
+}

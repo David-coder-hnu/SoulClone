@@ -71,5 +71,7 @@ htmlcov/
 *.pem
 *.key
 .gstack/
+.claude/settings.local.json
+.impeccable/config.local.json
 
 screenshots/
